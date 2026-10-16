@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Download, Filter, TrendingUp } from 'lucide-react';
+import { Download, TrendingUp } from 'lucide-react';
 import { usarHoras } from '../contextos/ContextoHoras';
 import { formatearMinutos } from '../utilidades/formateadores';
 
@@ -7,19 +7,16 @@ export const VistaReportes: React.FC = () => {
   const { registros, proyectos, usuario } = usarHoras();
   const [filtroProyecto, setFiltroProyecto] = useState('todos');
 
-  // Filtramos registros según el proyecto seleccionado
   const registrosFiltrados = registros.filter((r) => {
     if (filtroProyecto !== 'todos' && r.proyectoId !== filtroProyecto) return false;
     return true;
   });
 
-  // Cálculos estadísticos
   const totalMinutos = registrosFiltrados.reduce((acc, curr) => acc + curr.duracionMinutos, 0);
   const totalFacturable = registrosFiltrados
     .filter((r) => r.esFacturable)
     .reduce((acc, curr) => acc + curr.duracionMinutos, 0);
 
-  // Horas por cada proyecto
   const horasPorProyecto = proyectos.map((p) => {
     const minutos = registros
       .filter((r) => r.proyectoId === p.id)
@@ -28,7 +25,6 @@ export const VistaReportes: React.FC = () => {
     return { ...p, minutos, porcentaje };
   });
 
-  // Exportador de CSV oficial UTEL (Tarea 12 / RF-45 a RF-48)
   const exportarCSVUtel = () => {
     const encabezados = ['ID Registro', 'Fecha', 'Colaborador', 'Código Proyecto', 'Proyecto', 'Duración (Mins)', 'Horas Decimal', 'Facturable', 'Descripción'];
     
@@ -60,95 +56,89 @@ export const VistaReportes: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Encabezado y Botón de Exportar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Cabecera y Exportador estilo Clockify */}
+      <div className="bg-white border border-[#dfe5eb] rounded-md px-5 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-indigo-400" />
-            Dashboard y Métricas UTEL
+          <h2 className="text-base font-bold text-slate-800">
+            Informe Resumen • Control de Horas
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Tareas 10, 11 y 12 • Gráficas, filtros avanzados y exportación CSV oficial
+          <p className="text-xs text-slate-500 mt-0.5">
+            Registro de horas para UTEL Educación
           </p>
         </div>
 
         <button
           onClick={exportarCSVUtel}
-          className="px-5 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-600/20 flex items-center gap-2 text-sm transition cursor-pointer"
+          className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded text-white bg-[#03a9f4] hover:bg-[#0288d1] flex items-center gap-2 cursor-pointer shadow-sm transition"
         >
-          <Download className="w-4 h-4" />
-          <span>Exportar CSV Formato UTEL</span>
+          <Download className="w-3.5 h-3.5" />
+          <span>Exportar CSV</span>
         </button>
       </div>
 
-      {/* Tarjetas de Estadísticas Clave */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Total Horas Computadas
-          </span>
-          <div className="text-3xl font-black text-white mt-1">
+      {/* Tarjetas de Resumen estilo Clockify */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-[#dfe5eb] rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Tiempo Total
+          </div>
+          <div className="text-2xl font-bold text-slate-800 mt-1 font-mono">
             {formatearMinutos(totalMinutos)}
           </div>
-          <span className="text-xs text-indigo-400 mt-1 block">{(totalMinutos / 60).toFixed(1)} horas decimales</span>
+          <div className="text-[11px] text-slate-500 mt-1">
+            {(totalMinutos / 60).toFixed(2)} horas
+          </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Horas Facturables UTEL
-          </span>
-          <div className="text-3xl font-black text-emerald-400 mt-1">
+        <div className="bg-white border border-[#dfe5eb] rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Tiempo Facturable
+          </div>
+          <div className="text-2xl font-bold text-[#03a9f4] mt-1 font-mono">
             {formatearMinutos(totalFacturable)}
           </div>
-          <span className="text-xs text-emerald-400/80 mt-1 block">
-            {totalMinutos > 0 ? Math.round((totalFacturable / totalMinutos) * 100) : 0}% del tiempo total
-          </span>
+          <div className="text-[11px] text-slate-500 mt-1">
+            {totalMinutos > 0 ? Math.round((totalFacturable / totalMinutos) * 100) : 0}% facturable
+          </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Proyectos con Actividad
-          </span>
-          <div className="text-3xl font-black text-violet-400 mt-1">
+        <div className="bg-white border border-[#dfe5eb] rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Proyectos Activos
+          </div>
+          <div className="text-2xl font-bold text-slate-800 mt-1 font-mono">
             {horasPorProyecto.filter((p) => p.minutos > 0).length} de {proyectos.length}
           </div>
-          <span className="text-xs text-slate-400 mt-1 block">Espacios activos en ClickUp</span>
+          <div className="text-[11px] text-slate-500 mt-1">
+            Espacio de UTEL en ClickUp
+          </div>
         </div>
       </div>
 
-      {/* Distribución por Proyecto (Gráfica de Barras de Progreso) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <h3 className="text-md font-bold text-white flex items-center gap-2 pb-3 border-b border-slate-800">
-          <TrendingUp className="w-4 h-4 text-indigo-400" />
-          Distribución de Horas por Proyecto (RF-41)
-        </h3>
+      {/* Gráfico de barras de proyectos estilo Clockify */}
+      <div className="bg-white border border-[#dfe5eb] rounded-md p-5 shadow-sm space-y-4">
+        <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-[#03a9f4]" />
+          Desglose de Horas por Proyecto
+        </div>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-3 pt-1">
           {horasPorProyecto.map((p) => (
-            <div key={p.id} className="space-y-1.5">
+            <div key={p.id} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: p.color }}
-                  />
-                  <span className="font-semibold text-slate-200">{p.nombre}</span>
-                  <span className="text-slate-400 font-mono">({p.codigo})</span>
-                </div>
-                <div className="font-mono text-slate-300">
-                  <span className="font-bold text-white">{formatearMinutos(p.minutos)}</span> ({p.porcentaje}%)
-                </div>
+                <span className="flex items-center gap-2 font-medium text-slate-700">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: p.color }} />
+                  {p.nombre}
+                </span>
+                <span className="font-mono text-slate-600 font-bold">
+                  {formatearMinutos(p.minutos)} ({p.porcentaje}%)
+                </span>
               </div>
-
-              {/* Barra de Porcentaje */}
-              <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+              <div className="w-full h-2 bg-[#f0f3f6] rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${p.porcentaje}%`,
-                    backgroundColor: p.color,
-                  }}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${p.porcentaje}%`, backgroundColor: p.color }}
                 />
               </div>
             </div>
@@ -156,20 +146,18 @@ export const VistaReportes: React.FC = () => {
         </div>
       </div>
 
-      {/* Filtros Combinables y Tabla Detallada */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-slate-800">
-          <h3 className="text-md font-bold text-white flex items-center gap-2">
-            <Filter className="w-4 h-4 text-indigo-400" />
-            Tabla de Registros Filtrable (RF-36-RF-40)
-          </h3>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Filtrar por proyecto:</span>
+      {/* Tabla detallada de entradas */}
+      <div className="bg-white border border-[#dfe5eb] rounded-md shadow-sm overflow-hidden">
+        <div className="p-3 bg-[#f8fafc] border-b border-[#dfe5eb] flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Entradas de Tiempo Detalladas
+          </span>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-500">Filtrar:</span>
             <select
               value={filtroProyecto}
               onChange={(e) => setFiltroProyecto(e.target.value)}
-              className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200"
+              className="border border-[#dfe5eb] rounded px-2 py-1 text-xs text-slate-700 bg-white"
             >
               <option value="todos">Todos los proyectos</option>
               {proyectos.map((p) => (
@@ -182,42 +170,35 @@ export const VistaReportes: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/60 text-slate-400 uppercase tracking-wider font-semibold">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-[#f0f3f6] border-b border-[#dfe5eb] text-slate-500 uppercase tracking-wider font-semibold text-[11px]">
               <tr>
-                <th className="px-4 py-3 rounded-l-lg">Fecha</th>
-                <th className="px-4 py-3">Proyecto</th>
-                <th className="px-4 py-3">Descripción</th>
-                <th className="px-4 py-3">Facturable</th>
-                <th className="px-4 py-3 text-right rounded-r-lg">Duración</th>
+                <th className="px-4 py-2.5">Fecha</th>
+                <th className="px-4 py-2.5">Proyecto</th>
+                <th className="px-4 py-2.5">Descripción</th>
+                <th className="px-4 py-2.5">Facturable</th>
+                <th className="px-4 py-2.5 text-right">Duración</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#f0f3f6]">
               {registrosFiltrados.map((r) => {
                 const proy = proyectos.find((p) => p.id === r.proyectoId);
                 return (
-                  <tr key={r.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-4 py-3 font-mono text-slate-400">{r.fecha}</td>
-                    <td className="px-4 py-3 font-medium text-white flex items-center gap-2">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: proy?.color }}
-                      />
-                      {proy?.codigo}
+                  <tr key={r.id} className="hover:bg-[#fafbfc]">
+                    <td className="px-4 py-2.5 text-slate-500 font-mono">{r.fecha}</td>
+                    <td className="px-4 py-2.5 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: proy?.color }} />
+                      {proy?.nombre}
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{r.descripcion}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5 text-slate-600">{r.descripcion}</td>
+                    <td className="px-4 py-2.5">
                       {r.esFacturable ? (
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold text-[10px]">
-                          SÍ
-                        </span>
+                        <span className="text-[#03a9f4] font-bold">$</span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">
-                          NO
-                        </span>
+                        <span className="text-slate-300">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-bold text-white">
+                    <td className="px-4 py-2.5 text-right font-mono font-bold text-slate-800">
                       {formatearMinutos(r.duracionMinutos)}
                     </td>
                   </tr>

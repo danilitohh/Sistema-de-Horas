@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { usarHoras } from '../contextos/ContextoHoras';
 import { formatearMinutos } from '../utilidades/formateadores';
 
@@ -7,12 +7,9 @@ export const VistaCalendario: React.FC = () => {
   const { registros, proyectos } = usarHoras();
   const [modo, setModo] = useState<'semana' | 'mes'>('semana');
 
-  // Generamos los días de la semana actual
-  const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-  
-  // Fechas simuladas para la semana actual
+  const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   const hoy = new Date();
-  const diaSemanaIndex = (hoy.getDay() + 6) % 7; // 0 = Lunes
+  const diaSemanaIndex = (hoy.getDay() + 6) % 7;
   const primerDiaSemana = new Date(hoy);
   primerDiaSemana.setDate(hoy.getDate() - diaSemanaIndex);
 
@@ -34,109 +31,90 @@ export const VistaCalendario: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Barra Superior del Calendario */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* Barra de Controles superior estilo Clockify */}
+      <div className="bg-white border border-[#dfe5eb] rounded-md px-4 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
-            <CalendarIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">Vista de Calendario Semanal</h2>
-            <p className="text-xs text-slate-400">Tarea 09 • Visualización de bloques de horas (RF-31-RF-35)</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Selector de modo */}
-          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-            <button
-              onClick={() => setModo('semana')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                modo === 'semana' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Semana
-            </button>
-            <button
-              onClick={() => setModo('mes')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                modo === 'mes' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Mes
-            </button>
-          </div>
-
-          {/* Navegación fechas */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-            <button className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+          <div className="flex items-center border border-[#dfe5eb] rounded">
+            <button className="p-1.5 text-slate-500 hover:bg-[#f2f6f8] border-r border-[#dfe5eb] cursor-pointer">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-semibold px-2 text-slate-200">Esta Semana</span>
-            <button className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+            <button className="px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-[#f2f6f8] cursor-pointer">
+              Hoy
+            </button>
+            <button className="p-1.5 text-slate-500 hover:bg-[#f2f6f8] border-l border-[#dfe5eb] cursor-pointer">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+          <span className="text-sm font-semibold text-slate-800">
+            Esta Semana • Octubre 2026
+          </span>
+        </div>
+
+        {/* Selector Semana / Mes */}
+        <div className="flex border border-[#dfe5eb] rounded overflow-hidden text-xs">
+          <button
+            onClick={() => setModo('semana')}
+            className={`px-3 py-1.5 font-semibold cursor-pointer ${
+              modo === 'semana' ? 'bg-[#03a9f4] text-white' : 'bg-white text-slate-600 hover:bg-[#f2f6f8]'
+            }`}
+          >
+            Semana
+          </button>
+          <button
+            onClick={() => setModo('mes')}
+            className={`px-3 py-1.5 font-semibold cursor-pointer border-l border-[#dfe5eb] ${
+              modo === 'mes' ? 'bg-[#03a9f4] text-white' : 'bg-white text-slate-600 hover:bg-[#f2f6f8]'
+            }`}
+          >
+            Mes
+          </button>
         </div>
       </div>
 
-      {/* Rejilla de la Semana */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+      {/* Calendario Semanal */}
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
         {dias.map((dia) => (
           <div
             key={dia.fechaIso}
-            className={`bg-slate-900 border rounded-2xl p-4 flex flex-col min-h-[360px] transition ${
-              dia.esHoy ? 'border-indigo-500/60 shadow-lg shadow-indigo-500/10' : 'border-slate-800'
+            className={`bg-white border rounded-md min-h-[380px] flex flex-col shadow-sm ${
+              dia.esHoy ? 'border-[#03a9f4] ring-1 ring-[#03a9f4]' : 'border-[#dfe5eb]'
             }`}
           >
-            {/* Encabezado del día */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div>
-                <span className="text-xs font-medium text-slate-400 uppercase">{dia.nombre}</span>
-                <div
-                  className={`text-xl font-extrabold ${
-                    dia.esHoy ? 'text-indigo-400' : 'text-slate-200'
-                  }`}
-                >
-                  {dia.numero}
-                </div>
+            {/* Cabecera del día */}
+            <div className={`p-2.5 border-b text-center ${dia.esHoy ? 'bg-[#e1f5fe]/50 border-[#03a9f4]/30' : 'bg-[#fafbfc] border-[#dfe5eb]'}`}>
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{dia.nombre}</div>
+              <div className={`text-lg font-bold ${dia.esHoy ? 'text-[#03a9f4]' : 'text-slate-800'}`}>
+                {dia.numero}
               </div>
-              {dia.minutosTotales > 0 && (
-                <span className="text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">
-                  {formatearMinutos(dia.minutosTotales)}
-                </span>
-              )}
+              <div className="text-[11px] font-mono text-slate-500 font-semibold mt-0.5">
+                {dia.minutosTotales > 0 ? formatearMinutos(dia.minutosTotales) : '0h 0m'}
+              </div>
             </div>
 
-            {/* Bloques de horas registrados en este día */}
-            <div className="mt-3 space-y-2 flex-grow overflow-y-auto">
+            {/* Registros dentro del día */}
+            <div className="p-2 space-y-1.5 flex-1 overflow-y-auto">
               {dia.registros.map((reg) => {
                 const proy = proyectos.find((p) => p.id === reg.proyectoId);
                 return (
                   <div
                     key={reg.id}
-                    className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition space-y-1"
-                    style={{ borderLeftColor: proy?.color || '#6366f1', borderLeftWidth: '3px' }}
+                    className="p-2 rounded text-[11px] border shadow-xs transition hover:shadow-sm"
+                    style={{
+                      borderLeftColor: proy?.color || '#03a9f4',
+                      borderLeftWidth: '3px',
+                      backgroundColor: '#f8fafc',
+                      borderColor: '#e2e8f0',
+                    }}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-300 truncate">
-                        {proy?.codigo}
-                      </span>
-                      <span className="text-[11px] font-mono text-indigo-400 font-semibold">
-                        {formatearMinutos(reg.duracionMinutos)}
-                      </span>
+                    <div className="flex items-center justify-between text-slate-700 font-semibold truncate">
+                      <span>{proy?.codigo}</span>
+                      <span className="font-mono text-[10px] text-slate-500">{formatearMinutos(reg.duracionMinutos)}</span>
                     </div>
-                    <p className="text-xs text-slate-400 line-clamp-2">{reg.descripcion}</p>
+                    <p className="text-slate-500 truncate text-[10px] mt-0.5">{reg.descripcion}</p>
                   </div>
                 );
               })}
-
-              {dia.registros.length === 0 && (
-                <div className="h-full flex items-center justify-center text-center p-4">
-                  <span className="text-xs text-slate-400">Sin horas registradas</span>
-                </div>
-              )}
             </div>
           </div>
         ))}
