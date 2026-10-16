@@ -19,29 +19,29 @@ function App() {
 
   return (
     <ProveedorHoras>
-      <div className="min-h-screen bg-[#f2f6f8] text-[#333333] flex font-sans antialiased">
-        {/* Barra Lateral estilo Clockify */}
+      <div className="min-h-screen bg-[#F8F8F8] text-[#1C2D1A] flex font-sans antialiased">
+        {/* Barra Lateral estilo Clockify con paleta corporativa */}
         <BarraLateralClockify vistaActual={vistaActual} cambiarVista={setVistaActual} />
 
         {/* Contenido Principal */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Barra Superior Clockify */}
-          <header className="h-14 bg-white border-b border-[#dfe5eb] px-6 flex items-center justify-between shadow-xs">
+          {/* Barra Superior */}
+          <header className="h-14 bg-white border-b border-[#D9D9D9] px-6 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3">
-              <h1 className="text-base font-bold text-slate-800 tracking-tight">
+              <h1 className="text-base font-bold text-[#1C2D1A] tracking-tight">
                 {titulosVistas[vistaActual] || 'Rastreador'}
               </h1>
-              <span className="text-slate-300">/</span>
-              <span className="text-xs text-slate-500 font-medium">Utel proyecto</span>
+              <span className="text-[#D9D9D9]">/</span>
+              <span className="text-xs text-[#4E4E4E] font-medium">Utel proyecto</span>
             </div>
 
-            <div className="flex items-center gap-4 text-slate-400">
-              <button className="hover:text-slate-600 cursor-pointer">
+            <div className="flex items-center gap-4 text-[#4E4E4E]">
+              <button className="hover:text-[#1C2D1A] cursor-pointer">
                 <HelpCircle className="w-4 h-4" />
               </button>
-              <button className="hover:text-slate-600 cursor-pointer relative">
+              <button className="hover:text-[#1C2D1A] cursor-pointer relative">
                 <Bell className="w-4 h-4" />
-                <span className="w-2 h-2 rounded-full bg-[#03a9f4] absolute top-0 right-0"></span>
+                <span className="w-2 h-2 rounded-full bg-[#06B706] absolute top-0 right-0"></span>
               </button>
             </div>
           </header>

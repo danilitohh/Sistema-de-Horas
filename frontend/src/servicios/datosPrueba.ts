@@ -13,7 +13,7 @@ export const proyectosIniciales: Proyecto[] = [
     id: 'proy-1',
     nombre: 'Sistema de Horas UTEL',
     codigo: 'UTEL-HORAS',
-    color: '#6366f1', // Indigo
+    color: '#06B706', // --color-primary
     cliente: 'Universidad UTEL',
     horasEstimadas: 120,
     horasConsumidas: 42,
@@ -22,7 +22,7 @@ export const proyectosIniciales: Proyecto[] = [
     id: 'proy-2',
     nombre: 'Portal de Alumnos 2026',
     codigo: 'UTEL-PORTAL',
-    color: '#06b6d4', // Cyan
+    color: '#4000BC', // --color-purple
     cliente: 'UTEL Educación',
     horasEstimadas: 80,
     horasConsumidas: 65,
@@ -31,7 +31,7 @@ export const proyectosIniciales: Proyecto[] = [
     id: 'proy-3',
     nombre: 'Integración Pasarela Pagos',
     codigo: 'UTEL-PAGOS',
-    color: '#10b981', // Esmeralda
+    color: '#FFB937', // --color-yellow
     cliente: 'Finanzas UTEL',
     horasEstimadas: 40,
     horasConsumidas: 18,
