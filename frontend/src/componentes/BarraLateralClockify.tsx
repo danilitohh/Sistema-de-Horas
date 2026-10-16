@@ -19,14 +19,14 @@ export const BarraLateralClockify: React.FC<PropsBarra> = ({ vistaActual, cambia
 
   return (
     <aside className="w-64 bg-[#1b2733] text-slate-300 flex flex-col shrink-0 min-h-screen border-r border-[#131c25] select-none">
-      {/* Brand Header estilo Clockify */}
+      {/* Encabezado con el nombre de la app: clockUtel */}
       <div className="h-14 px-4 flex items-center justify-between border-b border-[#283848]">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-[#03a9f4] flex items-center justify-center shadow-md shadow-[#03a9f4]/30">
             <Clock className="w-5 h-5 text-white stroke-[2.5]" />
           </div>
           <span className="font-bold text-lg text-white tracking-wide">
-            clockify <span className="text-[10px] text-[#03a9f4] uppercase font-mono font-bold tracking-normal ml-1">UTEL</span>
+            clock<span className="text-[#03a9f4]">Utel</span>
           </span>
         </div>
       </div>
