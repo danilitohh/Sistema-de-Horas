@@ -34,3 +34,48 @@ export function calcularDiferenciaMinutos(inicio: string, fin: string): number {
 export function obtenerFechaHoy(): string {
   return new Date().toISOString().split('T')[0];
 }
+
+// Rangos de fecha predefinidos para filtros rápidos
+export type TipoRangoFecha = 'todo' | 'hoy' | 'esta_semana' | 'semana_pasada' | 'este_mes' | 'mes_pasado' | 'personalizado';
+
+export function obtenerLimitesRango(tipo: TipoRangoFecha): { inicio: string; fin: string } {
+  const hoy = new Date();
+  const aIso = (d: Date) => d.toISOString().split('T')[0];
+
+  if (tipo === 'hoy') {
+    const fecha = aIso(hoy);
+    return { inicio: fecha, fin: fecha };
+  }
+
+  if (tipo === 'esta_semana') {
+    const d = new Date(hoy);
+    const dia = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - dia);
+    const lunes = new Date(d);
+    d.setDate(d.getDate() + 6);
+    return { inicio: aIso(lunes), fin: aIso(d) };
+  }
+
+  if (tipo === 'semana_pasada') {
+    const d = new Date(hoy);
+    const dia = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - dia - 7);
+    const lunes = new Date(d);
+    d.setDate(d.getDate() + 6);
+    return { inicio: aIso(lunes), fin: aIso(d) };
+  }
+
+  if (tipo === 'este_mes') {
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    return { inicio: aIso(inicio), fin: aIso(fin) };
+  }
+
+  if (tipo === 'mes_pasado') {
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    return { inicio: aIso(inicio), fin: aIso(fin) };
+  }
+
+  return { inicio: '', fin: '' };
+}
