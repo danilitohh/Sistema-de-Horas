@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { RegistroHora, Proyecto, Tarea, Usuario, EstadoCronometro } from '../tipos';
+import type { RegistroHora, Proyecto, Tarea, Usuario, EstadoCronometro, RolUsuario } from '../tipos';
 import { usuarioActual, proyectosIniciales, tareasIniciales, registrosIniciales } from '../servicios/datosPrueba';
 import { obtenerFechaHoy } from '../utilidades/formateadores';
 
 interface ContextoHorasTipo {
   usuario: Usuario;
+  cambiarRol: (rol: RolUsuario) => void;
   proyectos: Proyecto[];
   tareas: Tarea[];
   registros: RegistroHora[];
@@ -19,9 +20,13 @@ interface ContextoHorasTipo {
 const ContextoHoras = createContext<ContextoHorasTipo | undefined>(undefined);
 
 export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [usuario] = useState<Usuario>(usuarioActual);
+  const [usuario, setUsuario] = useState<Usuario>(usuarioActual);
   const [proyectos] = useState<Proyecto[]>(proyectosIniciales);
   const [tareas] = useState<Tarea[]>(tareasIniciales);
+
+  const cambiarRol = (rol: RolUsuario) => {
+    setUsuario((prev) => ({ ...prev, rol }));
+  };
 
   // Carga registros persistidos o iniciales
   const [registros, setRegistros] = useState<RegistroHora[]>(() => {
@@ -124,6 +129,7 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
     <ContextoHoras.Provider
       value={{
         usuario,
+        cambiarRol,
         proyectos,
         tareas,
         registros,
