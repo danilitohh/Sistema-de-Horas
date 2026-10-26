@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #22C55E;
+  --color-primary-hover: #16A34A;
+  --color-primary-light: #DCFCE7;
+  --color-primary-dark: #1A2E1A;
+  --color-sidebar: #1A2E1A;
+  --color-sidebar-hover: #243824;
+  --color-lime: #86EFAC;
+  --color-yellow: #FBBF24;
+  --color-orange: #FB923C;
+  --color-red: #EF4444;
+  --color-purple: #8B5CF6;
+  --color-blue: #3B82F6;
+  --color-pink: #EC4899;
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-text: #1E293B;
+  --color-text-secondary: #64748B;
+  --color-border: #E2E8F0;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+}
+
+/* ==========================================================
+   COMPONENTES Y UTILIDADES REUTILIZABLES (Separación de estilos)
+   ========================================================== */
+
+/* Tarjetas */
+.app-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+
+.app-card-hover:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.app-card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Botones */
+.btn-primary {
+  background-color: #22C55E;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #16A34A;
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-secondary {
+  background-color: #F1F5F9;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #E2E8F0;
+  color: #0F172A;
+}
+
+/* Campos de formulario */
+.form-input {
+  width: 100%;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  color: #1E293B;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #22C55E;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  background-color: #ffffff;
+}
+
+/* Badges / Etiquetas de Estado */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.2rem 0.625rem;
+  border-radius: 9999px;
+}
+
+.badge-completed {
+  background-color: #DCFCE7;
+  color: #15803D;
+}
+
+.badge-in-progress {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.badge-pending {
+  background-color: #F1F5F9;
+  color: #64748B;
+}
+
+.badge-high-priority {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+}
+
+/* Indicadores de Porcentaje de Consumo */
+.percent-low {
+  color: #16A34A;
+}
+
+.percent-medium {
+  color: #D97706;
+}
+
+.percent-high {
+  color: #DC2626;
+}
+
+.bar-low {
+  background-color: #22C55E;
+}
+
+.bar-medium {
+  background-color: #FBBF24;
+}
+
+.bar-high {
+  background-color: #EF4444;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
