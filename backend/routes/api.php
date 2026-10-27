@@ -6,5 +6,7 @@ use App\Http\Controllers\Api\ClientController;
 
 Route::get('/status', [StatusController::class, 'index']);
 
-Route::get('/clients', [ClientController::class, 'index']);
+Route::get('/clients', [ClientController::class, 'index'])
+    ->middleware('auth:sanctum')
+    ->middleware('can:viewAny,App\Models\Client');
   
