@@ -15,6 +15,7 @@ interface ContextoHorasTipo {
   iniciarCronometro: (proyectoId: string, tareaId: string, descripcion: string) => void;
   pausarCronometro: () => void;
   detenerYGuardarCronometro: () => void;
+  actualizarRegistro: (actualizado: RegistroHora) => void;
 }
 
 const ContextoHoras = createContext<ContextoHorasTipo | undefined>(undefined);
@@ -124,6 +125,10 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
       inicioTimestamp: null,
     });
   };
+  
+  const actualizarRegistro = (actualizado: RegistroHora) => {
+    setRegistros(prev => prev.map(r => r.id === actualizado.id ? actualizado : r));
+  };
 
   return (
     <ContextoHoras.Provider
@@ -139,6 +144,7 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
         iniciarCronometro,
         pausarCronometro,
         detenerYGuardarCronometro,
+          actualizarRegistro,
       }}
     >
       {children}

@@ -3,17 +3,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Edit,
   X,
   Clock,
   Calendar as CalendarIcon,
 } from 'lucide-react';
 import { usarHoras } from '../contextos/ContextoHoras';
+import type { RegistroHora } from '../tipos';
 import { formatearMinutos, calcularDiferenciaMinutos } from '../utilidades/formateadores';
 
 type ModoVista = 'dia' | 'semana' | 'mes';
 
 export const VistaCalendario: React.FC = () => {
-  const { registros, proyectos, agregarRegistro } = usarHoras();
+  const { registros, proyectos, agregarRegistro, actualizarRegistro } = usarHoras();
 
   // 1. Estados principales: Modo de vista (día, semana, mes) y fecha base navegable
   const [modoVista, setModoVista] = useState<ModoVista>('semana');
@@ -28,6 +30,7 @@ export const VistaCalendario: React.FC = () => {
   const [horaFin, setHoraFin] = useState('11:00');
   const [esFacturable, setEsFacturable] = useState(true);
   const [error, setError] = useState('');
+  const [registroEnEdicion, setRegistroEnEdicion] = useState<RegistroHora | null>(null);
 
   // 3. Funciones auxiliares de fechas
   const aIso = (d: Date) => d.toISOString().split('T')[0];
@@ -112,10 +115,23 @@ export const VistaCalendario: React.FC = () => {
 
   // Apertura del modal
   const abrirModalCrear = (fecha: string, inicio: string = '09:00') => {
+    setRegistroEnEdicion(null);
     setFechaSeleccionada(fecha);
     setHoraInicio(inicio);
     setHoraFin(inicio < '17:00' ? `${String(Number(inicio.split(':')[0]) + 1).padStart(2, '0')}:00` : '18:00');
     setDescripcion('');
+    setError('');
+    setModalAbierto(true);
+  };
+
+  const abrirModalEditar = (registro: RegistroHora) => {
+    setRegistroEnEdicion(registro);
+    setFechaSeleccionada(registro.fecha);
+    setHoraInicio(registro.horaInicio);
+    setHoraFin(registro.horaFin);
+    setDescripcion(registro.descripcion);
+    setProyectoId(registro.proyectoId);
+    setEsFacturable(registro.esFacturable);
     setError('');
     setModalAbierto(true);
   };
@@ -125,15 +141,29 @@ export const VistaCalendario: React.FC = () => {
     if (!descripcion.trim()) return setError('Escribe qué actividades realizaste.');
     if (horaInicio >= horaFin) return setError('La hora de inicio debe ser anterior a la de fin.');
 
-    agregarRegistro({
-      proyectoId,
-      descripcion,
-      fecha: fechaSeleccionada,
-      horaInicio,
-      horaFin,
-      duracionMinutos: calcularDiferenciaMinutos(horaInicio, horaFin),
-      esFacturable,
-    });
+    if (registroEnEdicion) {
+      actualizarRegistro({
+        ...registroEnEdicion,
+        proyectoId,
+        descripcion,
+        fecha: fechaSeleccionada,
+        horaInicio,
+        horaFin,
+        duracionMinutos: calcularDiferenciaMinutos(horaInicio, horaFin),
+        esFacturable,
+      });
+      setRegistroEnEdicion(null);
+    } else {
+      agregarRegistro({
+        proyectoId,
+        descripcion,
+        fecha: fechaSeleccionada,
+        horaInicio,
+        horaFin,
+        duracionMinutos: calcularDiferenciaMinutos(horaInicio, horaFin),
+        esFacturable,
+      });
+    }
     setModalAbierto(false);
   };
 
@@ -244,7 +274,7 @@ export const VistaCalendario: React.FC = () => {
                         <p className="text-xs font-medium text-slate-800 line-clamp-2">{reg.descripcion}</p>
                         <div className="flex items-center justify-between mt-2 text-[10px] text-slate-400 font-mono">
                           <span>{formatearMinutos(reg.duracionMinutos)}</span>
-                          {reg.esFacturable && <span className="text-[#22C55E] font-bold">$</span>}
+                          {reg.esFacturable && <span className="text-[#22C55E] font-bold">$</span>} <Edit className="w-4 h-4 text-slate-500 hover:text-[#22C55E] cursor-pointer" onClick={() => abrirModalEditar(reg)} />
                         </div>
                       </div>
                     );
@@ -301,6 +331,7 @@ export const VistaCalendario: React.FC = () => {
                               </div>
                             </div>
                             <span className="font-mono font-bold text-xs text-slate-800">{formatearMinutos(reg.duracionMinutos)}</span>
+<Edit className="w-4 h-4 text-slate-500 hover:text-[#22C55E] cursor-pointer" onClick={() => abrirModalEditar(reg)} />
                           </div>
                         );
                       })
@@ -364,7 +395,7 @@ export const VistaCalendario: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden animate-fade-in">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-800">Registrar Horas</h3>
+                <h3 className="text-base font-bold text-slate-800">{registroEnEdicion ? 'Editar Horas' : 'Registrar Horas'}</h3>
                 <p className="text-xs text-slate-500 font-mono">Fecha: <strong className="text-[#22C55E]">{fechaSeleccionada}</strong></p>
               </div>
               <button onClick={() => setModalAbierto(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
