@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, CheckCircle2, BarChart3, Users, FolderKanban, Clock } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, BarChart3, Users, FolderKanban, Clock, ShieldCheck, UserCheck } from 'lucide-react';
+import type { RolUsuario } from '../tipos';
 
 interface VistaLoginProps {
-  onLogin: () => void;
+  onLogin: (rol?: RolUsuario) => void;
 }
 
 export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
@@ -106,11 +107,29 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-[#2D4A2D]" />
-            <span className="text-xs text-[#6B8F6B]">O continuar con</span>
-            <div className="flex-1 h-px bg-[#2D4A2D]" />
+          {/* Acceso Rápido por Rol para Demo */}
+          <div className="mt-5 pt-4 border-t border-[#2D4A2D]">
+            <p className="text-[11px] font-bold text-[#86EFAC]/70 uppercase tracking-wider mb-2.5 text-center">
+              Acceso Rápido según Rol
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => onLogin('administrador')}
+                className="py-2.5 px-3 rounded-xl bg-[#243824] hover:bg-[#2D4A2D] border border-[#22C55E]/40 text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
+                <span>Panel Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onLogin('colaborador')}
+                className="py-2.5 px-3 rounded-xl bg-[#243824] hover:bg-[#2D4A2D] border border-blue-400/40 text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <UserCheck className="w-4 h-4 text-blue-400" />
+                <span>Panel Usuario</span>
+              </button>
+            </div>
           </div>
 
           {/* Social Buttons */}
