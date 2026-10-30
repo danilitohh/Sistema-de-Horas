@@ -7,35 +7,42 @@ import {
   X,
   Clock,
   Calendar as CalendarIcon,
+  Trash2,
+  AlertTriangle,
+  Move,
 } from 'lucide-react';
 import { usarHoras } from '../contextos/ContextoHoras';
 import type { RegistroHora } from '../tipos';
-import { formatearMinutos, calcularDiferenciaMinutos } from '../utilidades/formateadores';
+import { formatearMinutos, calcularDiferenciaMinutos, obtenerFechaHoy } from '../utilidades/formateadores';
 
 type ModoVista = 'dia' | 'semana' | 'mes';
 
 export const VistaCalendario: React.FC = () => {
-  const { registros, proyectos, agregarRegistro, actualizarRegistro } = usarHoras();
+  const { registros, proyectos, tareas, agregarRegistro, actualizarRegistro, eliminarRegistro } = usarHoras();
 
-  // 1. Estados principales: Modo de vista (día, semana, mes) y fecha base navegable
+  // 1. Estados principales: Modo de vista (día, semana, mes) y fecha base
   const [modoVista, setModoVista] = useState<ModoVista>('semana');
   const [fechaBase, setFechaBase] = useState<Date>(new Date());
 
-  // 2. Estados del modal para registrar horas
+  // 2. Drag & Drop HTML5 para mover registros entre días
+  const [registroArrastrado, setRegistroArrastrado] = useState<RegistroHora | null>(null);
+  const [diaDestinoHover, setDiaDestinoHover] = useState<string | null>(null);
+
+  // 3. Estados del modal para registrar y editar horas
   const [modalAbierto, setModalAbierto] = useState(false);
   const [fechaSeleccionada, setFechaSeleccionada] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [proyectoId, setProyectoId] = useState(proyectos[0]?.id || '');
+  const [tareaId, setTareaId] = useState(tareas[0]?.id || '');
   const [horaInicio, setHoraInicio] = useState('09:00');
   const [horaFin, setHoraFin] = useState('11:00');
   const [esFacturable, setEsFacturable] = useState(true);
   const [error, setError] = useState('');
   const [registroEnEdicion, setRegistroEnEdicion] = useState<RegistroHora | null>(null);
 
-  // 3. Funciones auxiliares de fechas
+  // 4. Funciones de fechas
   const aIso = (d: Date) => d.toISOString().split('T')[0];
 
-  // Navegación: Avanzar o retroceder según el modo activo
   const navegar = (delta: number) => {
     const nueva = new Date(fechaBase);
     if (modoVista === 'dia') nueva.setDate(nueva.getDate() + delta);
@@ -46,11 +53,11 @@ export const VistaCalendario: React.FC = () => {
 
   const irAHoy = () => setFechaBase(new Date());
 
-  // 4. Cálculo de los datos para la VISTA SEMANA
+  // 5. Cálculo para VISTA SEMANA
   const diasSemana = useMemo(() => {
     const hoyIso = aIso(new Date());
     const primerDia = new Date(fechaBase);
-    const diaOffset = (primerDia.getDay() + 6) % 7; // Lunes = 0
+    const diaOffset = (primerDia.getDay() + 6) % 7;
     primerDia.setDate(primerDia.getDate() - diaOffset);
 
     const nombres = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -70,14 +77,13 @@ export const VistaCalendario: React.FC = () => {
     });
   }, [fechaBase, registros]);
 
-  // 5. Cálculo de los datos para la VISTA MES
+  // 6. Cálculo para VISTA MES
   const diasMes = useMemo(() => {
     const año = fechaBase.getFullYear();
     const mes = fechaBase.getMonth();
     const primerDiaMes = new Date(año, mes, 1);
     const ultimoDiaMes = new Date(año, mes + 1, 0);
 
-    // Días de relleno previo (lunes anterior)
     const diaInicio = (primerDiaMes.getDay() + 6) % 7;
     const dias = [];
 
@@ -87,14 +93,12 @@ export const VistaCalendario: React.FC = () => {
       dias.push({ numero: d.getDate(), iso, esMesActual: false, registros: registros.filter((r) => r.fecha === iso) });
     }
 
-    // Días del mes
     for (let i = 1; i <= ultimoDiaMes.getDate(); i++) {
       const d = new Date(año, mes, i);
       const iso = aIso(d);
       dias.push({ numero: i, iso, esMesActual: true, registros: registros.filter((r) => r.fecha === iso) });
     }
 
-    // Días de relleno posterior hasta completar semanas de 7
     let diaSiguiente = 1;
     while (dias.length % 7 !== 0) {
       const dPosterior = new Date(año, mes + 1, diaSiguiente);
@@ -106,14 +110,14 @@ export const VistaCalendario: React.FC = () => {
     return dias;
   }, [fechaBase, registros]);
 
-  // 6. Horas del día para la VISTA DÍA
   const horasDia = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
   const diaActualIso = aIso(fechaBase);
   const registrosDiaActual = registros.filter((r) => r.fecha === diaActualIso);
   const totalMinutosDia = registrosDiaActual.reduce((s, r) => s + r.duracionMinutos, 0);
   const totalMinutosSemana = diasSemana.reduce((s, d) => s + d.minutos, 0);
+  const totalMinutosMes = diasMes.filter(d => d.esMesActual).reduce((sum, d) => sum + d.registros.reduce((s, r) => s + r.duracionMinutos, 0), 0);
 
-  // Apertura del modal
+  // Apertura de modales
   const abrirModalCrear = (fecha: string, inicio: string = '09:00') => {
     setRegistroEnEdicion(null);
     setFechaSeleccionada(fecha);
@@ -131,68 +135,106 @@ export const VistaCalendario: React.FC = () => {
     setHoraFin(registro.horaFin || '10:00');
     setDescripcion(registro.descripcion);
     setProyectoId(registro.proyectoId);
+    setTareaId(registro.tareaId || '');
     setEsFacturable(registro.esFacturable);
     setError('');
     setModalAbierto(true);
   };
 
+  // Drag & Drop: Mover registro de un día a otro al arrastrar
+  const onDragStart = (e: React.DragEvent, reg: RegistroHora) => {
+    setRegistroArrastrado(reg);
+    e.dataTransfer.setData('text/plain', reg.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = (e: React.DragEvent, fechaIso: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (diaDestinoHover !== fechaIso) setDiaDestinoHover(fechaIso);
+  };
+
+  const onDrop = (e: React.DragEvent, fechaDestinoIso: string) => {
+    e.preventDefault();
+    setDiaDestinoHover(null);
+    if (!registroArrastrado) return;
+
+    if (registroArrastrado.fecha !== fechaDestinoIso) {
+      actualizarRegistro({
+        ...registroArrastrado,
+        fecha: fechaDestinoIso,
+      });
+    }
+    setRegistroArrastrado(null);
+  };
+
   const guardarTrabajo = (e: React.FormEvent) => {
     e.preventDefault();
+    if (fechaSeleccionada > obtenerFechaHoy()) return setError('No se puede registrar en fechas futuras.');
     if (!descripcion.trim()) return setError('Escribe qué actividades realizaste.');
     if (horaInicio >= horaFin) return setError('La hora de inicio debe ser anterior a la de fin.');
+
+    const duracion = calcularDiferenciaMinutos(horaInicio, horaFin);
 
     if (registroEnEdicion) {
       actualizarRegistro({
         ...registroEnEdicion,
         proyectoId,
+        tareaId: tareaId || undefined,
         descripcion,
         fecha: fechaSeleccionada,
         horaInicio,
         horaFin,
-        duracionMinutos: calcularDiferenciaMinutos(horaInicio, horaFin),
+        duracionMinutos: duracion,
         esFacturable,
       });
       setRegistroEnEdicion(null);
     } else {
       agregarRegistro({
         proyectoId,
+        tareaId: tareaId || undefined,
         descripcion,
         fecha: fechaSeleccionada,
         horaInicio,
         horaFin,
-        duracionMinutos: calcularDiferenciaMinutos(horaInicio, horaFin),
+        duracionMinutos: duracion,
         esFacturable,
       });
     }
     setModalAbierto(false);
   };
 
-  // Etiqueta del periodo según la vista
   const etiquetaPeriodo = () => {
     if (modoVista === 'dia') {
       return fechaBase.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
+    if (modoVista === 'semana') {
+      const inicio = diasSemana[0]?.numero;
+      const fin = diasSemana[6]?.numero;
+      const mes = fechaBase.toLocaleDateString('es-ES', { month: 'short' });
+      return `${inicio} - ${fin} de ${mes}, ${fechaBase.getFullYear()}`;
+    }
     return fechaBase.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   };
 
+  const tareasDelProyecto = tareas.filter(t => t.proyectoId === proyectoId);
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* 1. Barra de Control: Selector de vista, navegación y totalizadores */}
-      <div className="app-card p-5 flex flex-wrap items-center justify-between gap-4">
-        {/* Controles de navegación */}
+    <div className="space-y-6">
+      {/* 1. Barra de Navegación y Control del Calendario */}
+      <div className="app-card p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-100 rounded-xl p-1">
+          <button onClick={irAHoy} className="btn-secondary py-1.5 px-3 text-xs">
+            Hoy
+          </button>
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl">
             <button onClick={() => navegar(-1)} className="p-1.5 rounded-lg hover:bg-white text-slate-600 transition cursor-pointer">
               <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button onClick={irAHoy} className="px-3 text-xs font-bold text-slate-700 hover:text-[#22C55E] cursor-pointer">
-              Hoy
             </button>
             <button onClick={() => navegar(1)} className="p-1.5 rounded-lg hover:bg-white text-slate-600 transition cursor-pointer">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-
           <span className="capitalize font-bold text-sm text-slate-800 flex items-center gap-1.5">
             <CalendarIcon className="w-4 h-4 text-[#22C55E]" />
             {etiquetaPeriodo()}
@@ -218,71 +260,107 @@ export const VistaCalendario: React.FC = () => {
           <div className="text-right pl-3 border-l border-slate-200">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Total</span>
             <span className="text-sm font-extrabold text-slate-900 font-mono">
-              {formatearMinutos(modoVista === 'dia' ? totalMinutosDia : totalMinutosSemana)}
+              {formatearMinutos(
+                modoVista === 'dia' ? totalMinutosDia : modoVista === 'semana' ? totalMinutosSemana : totalMinutosMes
+              )}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 2. VISTA SEMANA (Parrilla de los 7 días) */}
+      {/* 2. VISTA SEMANA (Con soporte Drag & Drop de arrastre) */}
       {modoVista === 'semana' && (
         <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-          {diasSemana.map((dia) => (
-            <div
-              key={dia.iso}
-              className={`rounded-2xl border p-4 flex flex-col min-h-[400px] transition ${
-                dia.esHoy ? 'bg-[#F0FDF4] border-[#22C55E]/40 ring-2 ring-[#22C55E]/20' : 'bg-white border-slate-200/80 shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                  <p className={`text-xs font-bold uppercase ${dia.esHoy ? 'text-[#22C55E]' : 'text-slate-400'}`}>{dia.nombre}</p>
-                  <p className="text-xl font-extrabold text-slate-900">{dia.numero}</p>
-                </div>
-                <button
-                  onClick={() => abrirModalCrear(dia.iso)}
-                  className={`p-1.5 rounded-xl cursor-pointer transition ${
-                    dia.esHoy ? 'bg-[#22C55E] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-[#22C55E] hover:text-white'
-                  }`}
-                  title="Añadir horas"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="py-2">
-                <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md inline-block">
-                  {formatearMinutos(dia.minutos)}
-                </span>
-              </div>
-
-              <div className="space-y-2 flex-1 overflow-y-auto">
-                {dia.registros.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-300 py-8">
-                    <Clock className="w-5 h-5 mb-1" />
-                    <span className="text-[11px]">Sin horas</span>
+          {diasSemana.map((dia) => {
+            const isHover = diaDestinoHover === dia.iso;
+            return (
+              <div
+                key={dia.iso}
+                onDragOver={(e) => onDragOver(e, dia.iso)}
+                onDragLeave={() => setDiaDestinoHover(null)}
+                onDrop={(e) => onDrop(e, dia.iso)}
+                className={`rounded-2xl border p-4 flex flex-col min-h-[420px] transition ${
+                  isHover
+                    ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-300'
+                    : dia.esHoy
+                    ? 'bg-[#F0FDF4] border-[#22C55E]/40 ring-2 ring-[#22C55E]/20'
+                    : 'bg-white border-slate-200/80 shadow-xs'
+                }`}
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{dia.nombre}</span>
+                    <p className="text-xl font-extrabold text-slate-900">{dia.numero}</p>
                   </div>
-                ) : (
-                  dia.registros.map((reg) => {
-                    const proy = proyectos.find((p) => p.id === reg.proyectoId);
-                    return (
-                      <div key={reg.id} className="p-2.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: proy?.color || '#22C55E' }} />
-                          <span className="text-[10px] font-bold text-slate-500 truncate">{proy?.nombre || 'General'}</span>
+                  <button
+                    onClick={() => abrirModalCrear(dia.iso)}
+                    className={`p-1.5 rounded-xl cursor-pointer transition ${
+                      dia.esHoy ? 'bg-[#22C55E] text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-[#22C55E] hover:text-white'
+                    }`}
+                    title="Añadir horas"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="py-2">
+                  <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md inline-block">
+                    {formatearMinutos(dia.minutos)}
+                  </span>
+                </div>
+
+                <div className="space-y-2 flex-1 overflow-y-auto">
+                  {dia.registros.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300 py-8">
+                      <Clock className="w-5 h-5 mb-1" />
+                      <span className="text-[11px]">Arrastra o haz clic aquí</span>
+                    </div>
+                  ) : (
+                    dia.registros.map((reg) => {
+                      const proy = proyectos.find((p) => p.id === reg.proyectoId);
+                      return (
+                        <div
+                          key={reg.id}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, reg)}
+                          className="p-2.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs cursor-grab active:cursor-grabbing hover:border-slate-300 transition"
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: proy?.color || '#22C55E' }} />
+                              <span className="text-[10px] font-bold text-slate-500 truncate">{proy?.nombre || 'General'}</span>
+                            </div>
+                            <Move className="w-3 h-3 text-slate-300 shrink-0" />
+                          </div>
+                          <p className="text-xs font-medium text-slate-800 line-clamp-2">{reg.descripcion}</p>
+                          <div className="flex items-center justify-between mt-2 text-[10px] text-slate-400 font-mono">
+                            <span>{formatearMinutos(reg.duracionMinutos)}</span>
+                            <div className="flex items-center gap-1.5">
+                              {reg.esFacturable && <span className="text-[#22C55E] font-bold">$</span>}
+                              <Edit
+                                className="w-3.5 h-3.5 text-slate-400 hover:text-[#22C55E] cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirModalEditar(reg);
+                                }}
+                              />
+                              <Trash2
+                                className="w-3.5 h-3.5 text-slate-300 hover:text-red-500 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  eliminarRegistro(reg.id);
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs font-medium text-slate-800 line-clamp-2">{reg.descripcion}</p>
-                        <div className="flex items-center justify-between mt-2 text-[10px] text-slate-400 font-mono">
-                          <span>{formatearMinutos(reg.duracionMinutos)}</span>
-                          {reg.esFacturable && <span className="text-[#22C55E] font-bold">$</span>} <Edit className="w-4 h-4 text-slate-500 hover:text-[#22C55E] cursor-pointer" onClick={() => abrirModalEditar(reg)} />
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -330,8 +408,11 @@ export const VistaCalendario: React.FC = () => {
                                 <p className="text-[10px] text-slate-500 font-mono">{proy?.nombre} • {reg.horaInicio}-{reg.horaFin}</p>
                               </div>
                             </div>
-                            <span className="font-mono font-bold text-xs text-slate-800">{formatearMinutos(reg.duracionMinutos)}</span>
-<Edit className="w-4 h-4 text-slate-500 hover:text-[#22C55E] cursor-pointer" onClick={() => abrirModalEditar(reg)} />
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs text-slate-800">{formatearMinutos(reg.duracionMinutos)}</span>
+                              <Edit className="w-4 h-4 text-slate-400 hover:text-[#22C55E] cursor-pointer" onClick={() => abrirModalEditar(reg)} />
+                              <Trash2 className="w-4 h-4 text-slate-300 hover:text-red-500 cursor-pointer" onClick={() => eliminarRegistro(reg.id)} />
+                            </div>
                           </div>
                         );
                       })
@@ -344,7 +425,7 @@ export const VistaCalendario: React.FC = () => {
         </div>
       )}
 
-      {/* 4. VISTA MES (Cuadrícula del mes con 7 columnas) */}
+      {/* 4. VISTA MES (Cuadrícula del mes con 7 columnas y soporte Drop) */}
       {modoVista === 'mes' && (
         <div className="app-card overflow-hidden">
           <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200 text-center text-xs font-bold text-slate-600 py-3 uppercase">
@@ -353,12 +434,20 @@ export const VistaCalendario: React.FC = () => {
           <div className="grid grid-cols-7 divide-x divide-y divide-slate-100">
             {diasMes.map((dia, idx) => {
               const mins = dia.registros.reduce((s, r) => s + r.duracionMinutos, 0);
+              const isHover = diaDestinoHover === dia.iso;
               return (
                 <div
                   key={idx}
+                  onDragOver={(e) => onDragOver(e, dia.iso)}
+                  onDragLeave={() => setDiaDestinoHover(null)}
+                  onDrop={(e) => onDrop(e, dia.iso)}
                   onClick={() => abrirModalCrear(dia.iso)}
-                  className={`min-h-[105px] p-2 flex flex-col justify-between hover:bg-emerald-50/30 transition cursor-pointer ${
-                    !dia.esMesActual ? 'bg-slate-50/50 opacity-40' : 'bg-white'
+                  className={`min-h-[110px] p-2 flex flex-col justify-between transition cursor-pointer ${
+                    isHover
+                      ? 'bg-emerald-100/60 ring-2 ring-emerald-400'
+                      : !dia.esMesActual
+                      ? 'bg-slate-50/50 opacity-40 hover:bg-slate-100'
+                      : 'bg-white hover:bg-emerald-50/30'
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs">
@@ -373,8 +462,21 @@ export const VistaCalendario: React.FC = () => {
                     {dia.registros.slice(0, 2).map((r) => {
                       const proy = proyectos.find((p) => p.id === r.proyectoId);
                       return (
-                        <div key={r.id} className="text-[10px] truncate px-1.5 py-0.5 rounded text-white font-medium" style={{ backgroundColor: proy?.color || '#22C55E' }}>
-                          {r.descripcion}
+                        <div
+                          key={r.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            onDragStart(e, r);
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirModalEditar(r);
+                          }}
+                          className="text-[10px] truncate px-1.5 py-0.5 rounded text-white font-medium flex items-center justify-between cursor-grab"
+                          style={{ backgroundColor: proy?.color || '#22C55E' }}
+                        >
+                          <span className="truncate">{r.descripcion}</span>
                         </div>
                       );
                     })}
@@ -389,7 +491,7 @@ export const VistaCalendario: React.FC = () => {
         </div>
       )}
 
-      {/* 5. Modal para Crear Entrada de Horas */}
+      {/* 5. Modal para Crear y Editar Entrada de Horas */}
       {modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 overflow-hidden animate-fade-in">
@@ -404,21 +506,53 @@ export const VistaCalendario: React.FC = () => {
             </div>
 
             <form onSubmit={guardarTrabajo} className="p-6 space-y-4 text-xs">
-              {error && <div className="p-3 rounded-xl bg-red-50 text-red-600 border border-red-200">{error}</div>}
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Proyecto</label>
-                <select value={proyectoId} onChange={(e) => setProyectoId(e.target.value)} className="form-input">
-                  {proyectos.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre} ({p.codigo})</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Proyecto</label>
+                  <select
+                    value={proyectoId}
+                    onChange={(e) => {
+                      setProyectoId(e.target.value);
+                      const rel = tareas.filter(t => t.proyectoId === e.target.value);
+                      setTareaId(rel[0]?.id || '');
+                    }}
+                    className="form-input"
+                  >
+                    {proyectos.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Tarea</label>
+                  <select
+                    value={tareaId}
+                    onChange={(e) => setTareaId(e.target.value)}
+                    className="form-input"
+                  >
+                    {tareasDelProyecto.length > 0 ? (
+                      tareasDelProyecto.map((t) => (
+                        <option key={t.id} value={t.id}>{t.nombre}</option>
+                      ))
+                    ) : (
+                      <option value="">(Sin tareas)</option>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Descripción</label>
                 <textarea
-                  rows={3}
+                  rows={2}
+                  maxLength={500}
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   placeholder="¿Qué actividades completaste?"
@@ -437,7 +571,7 @@ export const VistaCalendario: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-1">
                 <span className="text-slate-700 font-semibold">¿Es facturable?</span>
                 <button
                   type="button"
@@ -448,9 +582,11 @@ export const VistaCalendario: React.FC = () => {
                 </button>
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-2 border-t border-slate-100">
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button type="button" onClick={() => setModalAbierto(false)} className="btn-secondary">Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar Horas</button>
+                <button type="submit" className="btn-primary">
+                  {registroEnEdicion ? 'Guardar Cambios' : 'Registrar Horas'}
+                </button>
               </div>
             </form>
           </div>
