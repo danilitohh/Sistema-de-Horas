@@ -11,6 +11,7 @@ import {
 export const VistaCronometro: React.FC = () => {
   const {
     proyectos,
+    tareas,
     registros,
     cronometro,
     agregarRegistro,
@@ -23,9 +24,12 @@ export const VistaCronometro: React.FC = () => {
   const [modo, setModo] = useState<'cronometro' | 'manual'>('cronometro');
   const [descripcion, setDescripcion] = useState(cronometro.descripcion || '');
   const [proyectoId, setProyectoId] = useState(cronometro.proyectoId || proyectos[0]?.id || '');
+  const [tareaId, setTareaId] = useState(cronometro.tareaId || '');
   const [esFacturable, setEsFacturable] = useState(true);
   const [horaInicio, setHoraInicio] = useState('09:00');
   const [horaFin, setHoraFin] = useState('11:00');
+
+  const tareasDelProyecto = tareas.filter((t) => t.proyectoId === proyectoId);
 
   // Acciones
   const alternarCronometro = () => {
@@ -33,7 +37,7 @@ export const VistaCronometro: React.FC = () => {
       detenerYGuardarCronometro();
       setDescripcion('');
     } else {
-      iniciarCronometro(proyectoId, '', descripcion);
+      iniciarCronometro(proyectoId, tareaId || tareasDelProyecto[0]?.id || '', descripcion);
     }
   };
 
@@ -41,6 +45,7 @@ export const VistaCronometro: React.FC = () => {
     if (!descripcion.trim()) return;
     agregarRegistro({
       proyectoId,
+      tareaId: tareaId || undefined,
       descripcion,
       fecha: obtenerFechaHoy(),
       horaInicio,
@@ -54,6 +59,7 @@ export const VistaCronometro: React.FC = () => {
   const reanudarRegistro = (reg: typeof registros[0]) => {
     setDescripcion(reg.descripcion);
     setProyectoId(reg.proyectoId);
+    setTareaId(reg.tareaId || '');
     setEsFacturable(reg.esFacturable);
     iniciarCronometro(reg.proyectoId, reg.tareaId || '', reg.descripcion);
   };
@@ -86,7 +92,11 @@ export const VistaCronometro: React.FC = () => {
             />
             <select
               value={proyectoId}
-              onChange={(e) => setProyectoId(e.target.value)}
+              onChange={(e) => {
+                setProyectoId(e.target.value);
+                const relacionadas = tareas.filter((t) => t.proyectoId === e.target.value);
+                setTareaId(relacionadas[0]?.id || '');
+              }}
               className="bg-transparent text-xs font-semibold text-slate-700 cursor-pointer focus:outline-none"
             >
               {proyectos.map((p) => (
@@ -95,6 +105,22 @@ export const VistaCronometro: React.FC = () => {
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
+
+          {/* Selector de tarea */}
+          {tareasDelProyecto.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2">
+              <select
+                value={tareaId}
+                onChange={(e) => setTareaId(e.target.value)}
+                className="bg-transparent text-xs text-slate-600 cursor-pointer focus:outline-none"
+              >
+                {tareasDelProyecto.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            </div>
+          )}
 
           {/* Botón Facturable */}
           <button
@@ -135,9 +161,16 @@ export const VistaCronometro: React.FC = () => {
           {/* Modo Cronómetro o Manual */}
           {modo === 'cronometro' ? (
             <div className="flex items-center gap-4">
-              <span className="font-mono text-xl font-extrabold text-slate-900 tracking-wider">
-                {formatearSegundos(cronometro.segundosTranscurridos)}
-              </span>
+              <div className="text-right">
+                <span className="font-mono text-xl font-extrabold text-slate-900 tracking-wider">
+                  {formatearSegundos(cronometro.segundosTranscurridos)}
+                </span>
+                {cronometro.segundosTranscurridos >= 36000 && (
+                  <span className="block text-[10px] text-amber-600 font-bold">
+                    ⚠️ Jornada &gt; 10h
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={alternarCronometro}

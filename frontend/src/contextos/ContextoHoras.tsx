@@ -60,15 +60,19 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('utel_cronometro_activo', JSON.stringify(cronometro));
   }, [cronometro]);
 
-  // Ticker del cronómetro cada segundo si está activo
+  // Ticker del cronómetro con sincronización precisa por timestamp (RNF-02, RNF-14)
   useEffect(() => {
     let intervalo: any = null;
     if (cronometro.estaActivo) {
       intervalo = setInterval(() => {
-        setCronometro((prev) => ({
-          ...prev,
-          segundosTranscurridos: prev.segundosTranscurridos + 1,
-        }));
+        setCronometro((prev) => {
+          if (!prev.estaActivo || !prev.inicioTimestamp) return prev;
+          const segundosReales = Math.floor((Date.now() - prev.inicioTimestamp) / 1000);
+          return {
+            ...prev,
+            segundosTranscurridos: segundosReales,
+          };
+        });
       }, 1000);
     }
     return () => clearInterval(intervalo);
@@ -89,9 +93,22 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const iniciarCronometro = (proyectoId: string, tareaId: string, descripcion: string) => {
+    // Relevo automático: si ya había un cronómetro corriendo, se guarda automáticamente el anterior (RF-23)
+    if (cronometro.estaActivo && cronometro.segundosTranscurridos > 0) {
+      const minutosTotales = Math.max(1, Math.round(cronometro.segundosTranscurridos / 60));
+      agregarRegistro({
+        proyectoId: cronometro.proyectoId,
+        tareaId: cronometro.tareaId,
+        descripcion: cronometro.descripcion || 'Registro completado por relevo automático',
+        fecha: obtenerFechaHoy(),
+        duracionMinutos: minutosTotales,
+        esFacturable: true,
+      });
+    }
+
     setCronometro({
       estaActivo: true,
-      segundosTranscurridos: cronometro.segundosTranscurridos,
+      segundosTranscurridos: 0,
       proyectoId,
       tareaId,
       descripcion,
