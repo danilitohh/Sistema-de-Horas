@@ -11,6 +11,7 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [recordar, setRecordar] = useState(false);
+  const [modalPrivacidad, setModalPrivacidad] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,8 +145,8 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
             </button>
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-[#2D4A2D]">
+          {/* Footer y Política de Privacidad */}
+          <div className="mt-8 pt-6 border-t border-[#2D4A2D] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80"
@@ -157,9 +158,52 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
                 <p className="text-[#6B8F6B] text-[11px]">PM en R.T Consulting Group</p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setModalPrivacidad(true)}
+              className="text-[11px] text-[#86EFAC]/70 hover:text-white underline cursor-pointer"
+            >
+              Política de Datos (Ley 1581)
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Modal de Política de Privacidad en Login */}
+      {modalPrivacidad && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 text-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-800">Política de Datos (Ley 1581 de 2012)</h3>
+              <button
+                type="button"
+                onClick={() => setModalPrivacidad(false)}
+                className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="text-xs text-slate-600 space-y-2 max-h-60 overflow-y-auto pr-2">
+              <p>
+                En cumplimiento de la <strong>Ley 1581 de 2012</strong> de la República de Colombia, la plataforma <strong>MyTask UTEL</strong> garantiza el tratamiento confidencial y la protección integral de tus datos de usuario y registros de tiempo.
+              </p>
+              <p>
+                <strong>Seguridad de credenciales:</strong> Las contraseñas están resguardadas mediante algoritmos criptográficos irreversibles en servidor. No almacenamos contraseñas en texto plano.
+              </p>
+              <p>
+                <strong>Derechos ARCO:</strong> Puedes solicitar acceso, rectificación, portabilidad o eliminación de tus registros en cualquier momento.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalPrivacidad(false)}
+              className="w-full btn-primary py-2 text-xs"
+            >
+              He leído y comprendo la política
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Right side – Feature Showcase */}
       <div className="hidden lg:flex lg:w-[52%] bg-gradient-to-br from-[#F0FDF0] via-[#DCFCE7] to-[#BBF7D0] flex-col justify-center items-center p-16 relative overflow-hidden">

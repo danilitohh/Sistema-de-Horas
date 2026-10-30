@@ -9,6 +9,7 @@ import { VistaCronometro } from './vistas/VistaCronometro';
 import { VistaCalendario } from './vistas/VistaCalendario';
 import { VistaReportes } from './vistas/VistaReportes';
 import { VistaRegistroHoras } from './vistas/VistaRegistroHoras';
+import { VistaPoliticaDatos } from './vistas/VistaPoliticaDatos';
 import { Bell, HelpCircle, Menu, Clock, ShieldCheck, User, Lock } from 'lucide-react';
 import type { RolUsuario } from './tipos';
 
@@ -29,6 +30,7 @@ function ContenidoApp() {
     calendario: esAdmin ? 'Calendario de Horas' : 'Mi Calendario',
     reportes: 'Reportes & Exportación',
     registro: 'Registro Manual',
+    privacidad: 'Privacidad & Política de Datos (Ley 1581)',
   };
 
   const handleLogin = (rol?: RolUsuario) => {
@@ -169,6 +171,7 @@ function ContenidoApp() {
               {vistaActual === 'calendario' && <VistaCalendario />}
               {vistaActual === 'reportes' && <VistaReportes />}
               {vistaActual === 'registro' && <VistaRegistroHoras />}
+              {vistaActual === 'privacidad' && <VistaPoliticaDatos />}
             </>
           )}
         </main>

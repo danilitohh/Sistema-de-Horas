@@ -7,7 +7,6 @@ import {
   Calendar,
   BarChart2,
   FileText,
-  Settings,
   LogOut,
   CheckCircle2,
   ChevronDown,
@@ -181,14 +180,19 @@ export const BarraLateralClockify: React.FC<PropsBarra> = ({
           )}
         </nav>
 
-        {/* Configuración */}
-        <div className="px-3 pb-2">
+        {/* Privacidad y Configuración */}
+        <div className="px-3 pb-2 space-y-1">
           <button
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-slate-400 hover:bg-[#243824] hover:text-white transition cursor-pointer"
-            aria-label="Configuración"
+            onClick={() => seleccionar('privacidad')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] transition cursor-pointer ${
+              vistaActual === 'privacidad'
+                ? 'bg-[#243824] text-white font-semibold shadow-xs'
+                : 'text-slate-400 hover:bg-[#243824] hover:text-white'
+            }`}
+            aria-label="Privacidad y Datos"
           >
-            <Settings className="w-[18px] h-[18px] text-[#86EFAC]/50" />
-            <span>Configuración</span>
+            <ShieldCheck className="w-[18px] h-[18px] text-[#22C55E]" />
+            <span>Privacidad & Datos</span>
           </button>
         </div>
 
