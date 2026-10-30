@@ -87,4 +87,31 @@ public function test_login_succeeds_with_valid_credentials(): void
 
     $this->assertDatabaseCount('personal_access_tokens', 1);
 }
+public function test_admin_can_access_clients_with_login_token(): void
+{
+    $admin = User::factory()->create([
+        'email' => 'admin@tempo.test',
+        'password' => Hash::make('ContrasenaCorrecta123!'),
+    ]);
+
+    $admin->role = 'admin';
+    $admin->save();
+
+    $loginResponse = $this->postJson('/api/login', [
+        'email' => 'admin@tempo.test',
+        'password' => 'ContrasenaCorrecta123!',
+    ]);
+
+    $loginResponse->assertOk();
+
+    $token = $loginResponse->json('token');
+
+    $this->assertIsString($token);
+    $this->assertNotEmpty($token);
+
+    $response = $this->withToken($token)
+        ->getJson('/api/clients');
+
+    $response->assertOk();
+}
 }

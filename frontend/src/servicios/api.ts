@@ -10,12 +10,13 @@ export interface LoginRequestDTO {
 }
 
 export interface AuthResponseDTO {
+  message: string;
   token: string;
-  usuario: {
-    id: string;
-    nombre: string;
-    correo: string;
-    rol: 'administrador' | 'gestor' | 'colaborador';
+  token_type: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
   };
 }
 

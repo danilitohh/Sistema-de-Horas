@@ -13,7 +13,7 @@ import { Bell, HelpCircle, Menu, Clock, ShieldCheck, User, Lock } from 'lucide-r
 import type { RolUsuario } from './tipos';
 
 function ContenidoApp() {
-  const [autenticado, setAutenticado] = useState(true);
+  const [autenticado, setAutenticado] = useState(false);
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { usuario, cambiarRol } = usarHoras();

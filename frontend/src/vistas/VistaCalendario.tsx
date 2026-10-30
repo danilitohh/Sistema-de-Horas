@@ -127,8 +127,8 @@ export const VistaCalendario: React.FC = () => {
   const abrirModalEditar = (registro: RegistroHora) => {
     setRegistroEnEdicion(registro);
     setFechaSeleccionada(registro.fecha);
-    setHoraInicio(registro.horaInicio);
-    setHoraFin(registro.horaFin);
+    setHoraInicio(registro.horaInicio || '09:00');
+    setHoraFin(registro.horaFin || '10:00');
     setDescripcion(registro.descripcion);
     setProyectoId(registro.proyectoId);
     setEsFacturable(registro.esFacturable);
