@@ -9,6 +9,8 @@ Route::get('/status', [StatusController::class, 'index']);
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1');
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware('auth:sanctum');
 
 Route::get('/clients', [ClientController::class, 'index'])
     ->middleware('auth:sanctum')

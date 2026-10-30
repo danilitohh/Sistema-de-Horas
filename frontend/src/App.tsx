@@ -12,6 +12,7 @@ import { VistaRegistroHoras } from './vistas/VistaRegistroHoras';
 import { VistaPoliticaDatos } from './vistas/VistaPoliticaDatos';
 import { Bell, HelpCircle, Menu, Clock, ShieldCheck, User, Lock } from 'lucide-react';
 import type { RolUsuario } from './tipos';
+import { clienteApi } from './servicios/api';
 
 function ContenidoApp() {
   const [autenticado, setAutenticado] = useState(false);
@@ -41,13 +42,19 @@ function ContenidoApp() {
     setAutenticado(true);
   };
 
-  const alternarRol = () => {
-    const nuevoRol: RolUsuario = esAdmin ? 'colaborador' : 'administrador';
-    cambiarRol(nuevoRol);
-    if (nuevoRol === 'colaborador' && esVistaAdminExclusiva) {
-      setVistaActual('cronometro');
-    }
-  };
+  const handleLogout = async () => {
+  try {
+    await clienteApi.post('/logout', {});
+  } catch (error) {
+    console.error(
+      'No se pudo confirmar el cierre de sesión en Laravel.',
+      error
+    );
+  } finally {
+    localStorage.removeItem('utel_auth_token');
+    setAutenticado(false);
+  }
+};
 
   if (!autenticado) {
     return <VistaLogin onLogin={handleLogin} />;
@@ -59,7 +66,7 @@ function ContenidoApp() {
       <BarraLateralClockify
         vistaActual={vistaActual}
         cambiarVista={setVistaActual}
-        onLogout={() => setAutenticado(false)}
+        onLogout={handleLogout}
         menuAbierto={menuAbierto}
         onCerrarMenu={() => setMenuAbierto(false)}
       />
@@ -90,19 +97,22 @@ function ContenidoApp() {
           {/* Acciones Rápidas del Header & Selector de Rol */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Pill indicador y conmutador de rol interactivo */}
-            <button
-              onClick={alternarRol}
-              className={`text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition cursor-pointer ${
+            <div
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
                 esAdmin
-                  ? 'bg-[#DCFCE7] text-[#15803D] border-[#22C55E]/40 hover:bg-[#BBF7D0]'
-                  : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                  ? 'bg-[#DCFCE7] text-[#15803D] border-[#22C55E]/40'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
               }`}
-              title="Clic para cambiar entre Panel Administrador y Colaborador"
             >
-              {esAdmin ? <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" /> : <User className="w-3.5 h-3.5 text-blue-600" />}
-              <span className="hidden sm:inline">{esAdmin ? 'Panel Admin' : 'Panel Usuario'}</span>
-              <span className="text-[10px] opacity-75 hidden md:inline">(Cambiar)</span>
-            </button>
+              {esAdmin ? (
+                <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" />
+              ) : (
+                <User className="w-3.5 h-3.5 text-blue-600" />
+              )}
+              <span className="hidden sm:inline">
+                {esAdmin ? 'Panel Admin' : 'Panel Usuario'}
+              </span>
+            </div>
 
             {/* Acceso Rápido al Cronómetro en 1 Clic (RNF-16) */}
             {vistaActual !== 'cronometro' && (
@@ -117,7 +127,7 @@ function ContenidoApp() {
             )}
 
             <button
-              onClick={() => setAutenticado(false)}
+              onClick={handleLogout}
               className="text-xs font-semibold text-slate-500 hover:text-[#22C55E] px-2 py-1.5 rounded-lg hover:bg-slate-50 transition cursor-pointer hidden md:inline"
             >
               Cerrar sesión
@@ -157,9 +167,7 @@ function ContenidoApp() {
                 <button onClick={() => setVistaActual('cronometro')} className="btn-primary">
                   Ir a mi Rastreador
                 </button>
-                <button onClick={alternarRol} className="btn-secondary">
-                  Cambiar a Modo Admin
-                </button>
+
               </div>
             </div>
           ) : (

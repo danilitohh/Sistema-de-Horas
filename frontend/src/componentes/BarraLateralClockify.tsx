@@ -31,7 +31,7 @@ export const BarraLateralClockify: React.FC<PropsBarra> = ({
   menuAbierto = false,
   onCerrarMenu,
 }) => {
-  const { usuario, cambiarRol } = usarHoras();
+  const { usuario } = usarHoras();
   const esAdmin = usuario.rol === 'administrador';
 
   // Configuración de menús según el rol activo
@@ -58,14 +58,6 @@ export const BarraLateralClockify: React.FC<PropsBarra> = ({
   const seleccionar = (id: string) => {
     cambiarVista(id);
     if (onCerrarMenu) onCerrarMenu();
-  };
-
-  const alternarRol = () => {
-    const nuevo = esAdmin ? 'colaborador' : 'administrador';
-    cambiarRol(nuevo);
-    if (nuevo === 'colaborador' && ['dashboard', 'proyectos', 'reportes'].includes(vistaActual)) {
-      cambiarVista('cronometro');
-    }
   };
 
   const renderItemMenu = (item: { id: string; etiqueta: string; icono: React.ElementType }) => {
@@ -131,18 +123,20 @@ export const BarraLateralClockify: React.FC<PropsBarra> = ({
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#86EFAC]/70">
               {esAdmin ? 'Panel Administrador' : 'Panel Colaborador'}
             </span>
-            <button
-              onClick={alternarRol}
-              className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition ${
+            <div
+              className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                 esAdmin
-                  ? 'bg-[#22C55E]/20 text-[#86EFAC] hover:bg-[#22C55E]/30'
-                  : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                  ? 'bg-[#22C55E]/20 text-[#86EFAC]'
+                  : 'bg-blue-500/20 text-blue-300'
               }`}
-              title="Clic para cambiar de rol (Admin / Colaborador)"
             >
-              {esAdmin ? <ShieldCheck className="w-3 h-3" /> : <User className="w-3 h-3" />}
+              {esAdmin ? (
+                <ShieldCheck className="w-3 h-3" />
+              ) : (
+                <User className="w-3 h-3" />
+              )}
               <span>{esAdmin ? 'Admin' : 'Usuario'}</span>
-            </button>
+            </div>
           </div>
           <div className="flex items-center justify-between bg-[#243824] px-3 py-2 rounded-xl text-xs text-white cursor-pointer hover:bg-[#2D4A2D] transition border border-[#2D4A2D]">
             <span className="font-semibold truncate">

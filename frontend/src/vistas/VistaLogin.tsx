@@ -31,7 +31,7 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
       respuesta.token
     );
 
-    onLogin();
+    onLogin(respuesta.user.role === 'admin' ? 'administrador' : 'colaborador');
   } catch (error) {
     const mensaje =
       error instanceof Error

@@ -7,6 +7,7 @@ use App\Http\Requests\Api\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -36,4 +37,13 @@ class AuthController extends Controller
         ],
     ], 200);
 }
+
+        public function logout(Request $request): JsonResponse
+        {
+            $request->user()->currentAccessToken()->delete();
+
+            return response()->json([
+                'message' => 'Sesión cerrada correctamente.',
+            ], 200);
+        }
 }
