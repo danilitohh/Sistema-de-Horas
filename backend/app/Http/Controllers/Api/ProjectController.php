@@ -43,9 +43,14 @@ class ProjectController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Project $project)
     {
-        //
+    $project->load('client:id,name');
+
+    return response()->json([
+        'data' => $project,
+        'message' => 'Detalle del proyecto',
+    ]);
     }
 
     /**
