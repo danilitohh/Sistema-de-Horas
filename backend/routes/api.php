@@ -29,3 +29,7 @@ Route::post('/projects', [ProjectController::class, 'store'])
 Route::get('/projects/{project}', [ProjectController::class, 'show'])
     ->middleware('auth:sanctum')
     ->middleware('can:view,project');
+
+Route::patch('/projects/{project}', [ProjectController::class, 'update'])
+    ->middleware('auth:sanctum')
+    ->middleware('can:update,project');
