@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreProjectRequest;
 
 class ProjectController extends Controller
 {
@@ -25,9 +26,18 @@ class ProjectController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreProjectRequest $request)
     {
-        //
+    $project = Project::create(
+        $request->validated()
+    );
+
+    $project->load('client:id,name');
+
+    return response()->json([
+        'data' => $project,
+        'message' => 'Proyecto creado correctamente',
+    ], 201);
     }
 
     /**

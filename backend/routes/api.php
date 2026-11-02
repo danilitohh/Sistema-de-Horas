@@ -21,3 +21,7 @@ Route::get('/clients', [ClientController::class, 'index'])
 Route::get('/projects', [ProjectController::class, 'index'])
     ->middleware('auth:sanctum')
     ->middleware('can:viewAny,App\Models\Project');
+
+Route::post('/projects', [ProjectController::class, 'store'])
+    ->middleware('auth:sanctum')
+    ->middleware('can:create,App\Models\Project');
