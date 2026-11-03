@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, CheckCircle2, BarChart3, Users, FolderKanban, Clock, ShieldCheck, UserCheck } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, BarChart3, Users, FolderKanban, Clock } from 'lucide-react';
 import type { RolUsuario } from '../tipos';
+import { clienteApi, type AuthResponseDTO } from '../servicios/api';
 
 interface VistaLoginProps {
   onLogin: (rol?: RolUsuario) => void;
@@ -13,10 +14,33 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
   const [recordar, setRecordar] = useState(false);
   const [modalPrivacidad, setModalPrivacidad] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onLogin();
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const respuesta = await clienteApi.post<AuthResponseDTO>(
+      '/login',
+      {
+        email: email.trim(),
+        password,
+      }
+    );
+
+    localStorage.setItem(
+      'utel_auth_token',
+      respuesta.token
+    );
+
+    onLogin(respuesta.user.role === 'admin' ? 'administrador' : 'colaborador');
+  } catch (error) {
+    const mensaje =
+      error instanceof Error
+        ? error.message
+        : 'No se pudo iniciar sesión';
+
+    window.alert(mensaje);
+  }
+};
 
   return (
     <div className="min-h-screen flex font-['Inter']">
@@ -107,31 +131,6 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
               Iniciar Sesión
             </button>
           </form>
-
-          {/* Acceso Rápido por Rol para Demo */}
-          <div className="mt-5 pt-4 border-t border-[#2D4A2D]">
-            <p className="text-[11px] font-bold text-[#86EFAC]/70 uppercase tracking-wider mb-2.5 text-center">
-              Acceso Rápido según Rol
-            </p>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => onLogin('administrador')}
-                className="py-2.5 px-3 rounded-xl bg-[#243824] hover:bg-[#2D4A2D] border border-[#22C55E]/40 text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
-                <span>Panel Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onLogin('colaborador')}
-                className="py-2.5 px-3 rounded-xl bg-[#243824] hover:bg-[#2D4A2D] border border-blue-400/40 text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <UserCheck className="w-4 h-4 text-blue-400" />
-                <span>Panel Usuario</span>
-              </button>
-            </div>
-          </div>
 
           {/* Social Buttons */}
           <div className="grid grid-cols-2 gap-3">
