@@ -33,3 +33,7 @@ Route::get('/projects/{project}', [ProjectController::class, 'show'])
 Route::patch('/projects/{project}', [ProjectController::class, 'update'])
     ->middleware('auth:sanctum')
     ->middleware('can:update,project');
+
+Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])
+    ->middleware('auth:sanctum')
+    ->middleware('can:delete,project');
