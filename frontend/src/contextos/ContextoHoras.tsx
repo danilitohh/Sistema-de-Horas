@@ -1,6 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import type { RegistroHora, Proyecto, Tarea, Usuario, EstadoCronometro, RolUsuario } from '../tipos';
 import { usuarioActual, proyectosIniciales, tareasIniciales, registrosIniciales } from '../servicios/datosPrueba';
+import {
+  actualizarRegistroHora,
+  crearRegistroHora,
+  eliminarRegistroHora,
+  obtenerRegistrosHora,
+  type CrearRegistroHoraDTO,
+  type RegistroHoraDTO,
+} from '../servicios/api';
 import { obtenerFechaHoy } from '../utilidades/formateadores';
 
 interface ContextoHorasTipo {
@@ -10,6 +18,8 @@ interface ContextoHorasTipo {
   tareas: Tarea[];
   registros: RegistroHora[];
   cronometro: EstadoCronometro;
+  errorPersistencia: string | null;
+  recargarRegistros: () => Promise<void>;
   agregarRegistro: (nuevo: Omit<RegistroHora, 'id' | 'creadoEn' | 'usuarioId'>) => void;
   eliminarRegistro: (id: string) => void;
   iniciarCronometro: (proyectoId: string, tareaId: string, descripcion: string) => void;
@@ -20,20 +30,68 @@ interface ContextoHorasTipo {
 
 const ContextoHoras = createContext<ContextoHorasTipo | undefined>(undefined);
 
+const convertirRegistroApi = (registro: RegistroHoraDTO): RegistroHora => ({
+  id: registro.id,
+  usuarioId: registro.usuarioId,
+  proyectoId: registro.proyectoId,
+  tareaId: registro.tareaId ?? undefined,
+  descripcion: registro.descripcion,
+  fecha: registro.fecha,
+  horaInicio: registro.horaInicio ?? undefined,
+  horaFin: registro.horaFin ?? undefined,
+  duracionMinutos: Number(registro.duracionMinutos),
+  esFacturable: Boolean(registro.esFacturable),
+  creadoEn: registro.creadoEn,
+});
+
+const convertirRegistroRequest = (registro: RegistroHora): CrearRegistroHoraDTO => ({
+  id: registro.id,
+  creadoEn: registro.creadoEn,
+  proyectoId: registro.proyectoId,
+  tareaId: registro.tareaId ?? null,
+  descripcion: registro.descripcion,
+  fecha: registro.fecha,
+  horaInicio: registro.horaInicio ?? null,
+  horaFin: registro.horaFin ?? null,
+  duracionMinutos: registro.duracionMinutos,
+  esFacturable: registro.esFacturable,
+});
+
 export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [usuario, setUsuario] = useState<Usuario>(usuarioActual);
   const [proyectos] = useState<Proyecto[]>(proyectosIniciales);
   const [tareas] = useState<Tarea[]>(tareasIniciales);
+  const [errorPersistencia, setErrorPersistencia] = useState<string | null>(null);
 
-  const cambiarRol = (rol: RolUsuario) => {
+  const cambiarRol = useCallback((rol: RolUsuario) => {
     setUsuario((prev) => ({ ...prev, rol }));
-  };
+  }, []);
 
   // Carga registros persistidos o iniciales
   const [registros, setRegistros] = useState<RegistroHora[]>(() => {
     const guardados = localStorage.getItem('utel_registros_horas');
     return guardados ? JSON.parse(guardados) : registrosIniciales;
   });
+
+  const recargarRegistros = useCallback(async () => {
+    if (!localStorage.getItem('utel_auth_token')) return;
+
+    try {
+      const registrosApi = await obtenerRegistrosHora();
+      setRegistros(registrosApi.map(convertirRegistroApi));
+      setErrorPersistencia(null);
+    } catch {
+      setErrorPersistencia(
+        'No se pudieron cargar los registros del servidor. Los datos del navegador siguen disponibles.'
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (localStorage.getItem('utel_auth_token')) {
+      void recargarRegistros();
+    }
+  }, [recargarRegistros]);
 
   // Estado del cronómetro persistente en localStorage
   const [cronometro, setCronometro] = useState<EstadoCronometro>(() => {
@@ -86,10 +144,42 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
       creadoEn: new Date().toISOString(),
     };
     setRegistros((prev) => [registroCompleto, ...prev]);
+
+    if (localStorage.getItem('utel_auth_token')) {
+      void crearRegistroHora(convertirRegistroRequest(registroCompleto))
+        .then((registroGuardado) => {
+          const registroConvertido = convertirRegistroApi(registroGuardado);
+          setRegistros((prev) => prev.map((registro) => (
+            registro.id === registroCompleto.id ? registroConvertido : registro
+          )));
+          setErrorPersistencia(null);
+        })
+        .catch(() => {
+          setErrorPersistencia(
+            'No se pudo guardar una entrada en el servidor. La entrada permanece en este navegador.'
+          );
+        });
+    }
   };
 
   const eliminarRegistro = (id: string) => {
+    const registroEliminado = registros.find((registro) => registro.id === id);
     setRegistros((prev) => prev.filter((r) => r.id !== id));
+
+    if (registroEliminado && localStorage.getItem('utel_auth_token')) {
+      void eliminarRegistroHora(id)
+        .then(() => setErrorPersistencia(null))
+        .catch(() => {
+          setRegistros((prev) => (
+            prev.some((registro) => registro.id === id)
+              ? prev
+              : [registroEliminado, ...prev]
+          ));
+          setErrorPersistencia(
+            'No se pudo eliminar el registro del servidor; se restauró en la lista.'
+          );
+        });
+    }
   };
 
   const iniciarCronometro = (proyectoId: string, tareaId: string, descripcion: string) => {
@@ -145,6 +235,25 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const actualizarRegistro = (actualizado: RegistroHora) => {
     setRegistros(prev => prev.map(r => r.id === actualizado.id ? actualizado : r));
+
+    if (localStorage.getItem('utel_auth_token')) {
+      void actualizarRegistroHora(
+        actualizado.id,
+        convertirRegistroRequest(actualizado)
+      )
+        .then((registroGuardado) => {
+          const registroConvertido = convertirRegistroApi(registroGuardado);
+          setRegistros((prev) => prev.map((registro) => (
+            registro.id === actualizado.id ? registroConvertido : registro
+          )));
+          setErrorPersistencia(null);
+        })
+        .catch(() => {
+          setErrorPersistencia(
+            'No se pudo actualizar el registro en el servidor. El cambio permanece en este navegador.'
+          );
+        });
+    }
   };
 
   return (
@@ -156,6 +265,8 @@ export const ProveedorHoras: React.FC<{ children: React.ReactNode }> = ({ childr
         tareas,
         registros,
         cronometro,
+        errorPersistencia,
+        recargarRegistros,
         agregarRegistro,
         eliminarRegistro,
         iniciarCronometro,

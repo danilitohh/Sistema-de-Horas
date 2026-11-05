@@ -21,7 +21,7 @@ class ProjectStoreTest extends TestCase
 
     public function test_normal_users_cannot_create_projects(): void
     {
-        $user = new User();
+        $user = new User;
         $user->role = 'user';
 
         Sanctum::actingAs($user);
@@ -37,7 +37,7 @@ class ProjectStoreTest extends TestCase
             'name' => 'Cliente de prueba',
         ]);
 
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);
@@ -57,16 +57,16 @@ class ProjectStoreTest extends TestCase
                 'Proyecto creado correctamente'
             );
 
-        $this->assertDatabaseHas('projects', [
-            'name' => 'Proyecto Alfa',
-            'client_id' => $client->id,
-            'code' => 'PR-001',
+        $this->assertDatabaseHas('proyectos', [
+            'nombre' => 'Proyecto Alfa',
+            'cliente_id' => $client->id,
+            'codigo' => 'PR-001',
         ]);
     }
 
     public function test_admin_can_create_project_without_client(): void
     {
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);
@@ -77,15 +77,15 @@ class ProjectStoreTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.client', null);
 
-        $this->assertDatabaseHas('projects', [
-            'name' => 'Proyecto independiente',
-            'client_id' => null,
+        $this->assertDatabaseHas('proyectos', [
+            'nombre' => 'Proyecto independiente',
+            'cliente_id' => null,
         ]);
     }
 
     public function test_invalid_project_data_is_rejected(): void
     {
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);

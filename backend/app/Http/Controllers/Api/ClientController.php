@@ -3,52 +3,45 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreClientRequest;
+use App\Models\Client;
+use Illuminate\Http\JsonResponse;
 
 class ClientController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    
-public function index()
-{
-    return response()->json([
-        'data' => [],
-        'message' => 'API de clientes preparada',
-    ]);
-}
-  
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function index(): JsonResponse
     {
-        //
+        $clients = Client::query()
+            ->select(['id', 'nombre'])
+            ->orderBy('nombre')
+            ->get()
+            ->map(fn (Client $client): array => $this->toDto($client))
+            ->values();
+
+        return response()->json([
+            'data' => $clients,
+            'message' => 'Listado de clientes',
+        ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreClientRequest $request): JsonResponse
     {
-        //
+        $client = Client::query()->create([
+            'nombre' => trim($request->validated()['name']),
+        ]);
+
+        return response()->json([
+            'data' => $this->toDto($client),
+            'message' => 'Cliente creado correctamente',
+        ], 201);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    /** @return array{id: int, name: string} */
+    private function toDto(Client $client): array
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return [
+            'id' => $client->id,
+            'name' => $client->nombre,
+        ];
     }
 }

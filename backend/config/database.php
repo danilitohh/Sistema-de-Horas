@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'tempo_mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -62,6 +62,20 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+        ],
+
+        'tempo_mysql' => [
+            'driver' => 'mysql',
+            'host' => env('TEMPO_MYSQL_HOST', '127.0.0.1'),
+            'port' => env('TEMPO_MYSQL_PORT', '3306'),
+            'database' => env('TEMPO_MYSQL_DATABASE', 'tempo_dev'),
+            'username' => env('TEMPO_MYSQL_USERNAME', 'tempo_app'),
+            'password' => env('TEMPO_MYSQL_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
         ],
 
         'mariadb' => [
@@ -128,7 +142,7 @@ return [
     */
 
     'migrations' => [
-        'table' => 'migrations',
+        'table' => 'migraciones',
         'update_date_on_publish' => true,
     ],
 

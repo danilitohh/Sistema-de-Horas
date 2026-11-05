@@ -31,11 +31,11 @@ class LogoutTest extends TestCase
                 'Sesión cerrada correctamente.'
             );
 
-        $this->assertDatabaseMissing('personal_access_tokens', [
+        $this->assertDatabaseMissing('tokens_acceso', [
             'id' => $currentToken->accessToken->id,
         ]);
 
-        $this->assertDatabaseHas('personal_access_tokens', [
+        $this->assertDatabaseHas('tokens_acceso', [
             'id' => $otherToken->accessToken->id,
         ]);
     }

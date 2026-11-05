@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit3, Trash2, X, FolderKanban, Clock, Check, Eye } from 'lucide-react';
 import { usarHoras } from '../contextos/ContextoHoras';
 import { formatearMinutos } from '../utilidades/formateadores';
 import { VistaDetalleProyecto } from './VistaDetalleProyecto';
+import { obtenerProyectos } from '../servicios/api';
 
 const coloresDisponibles = ['#22C55E', '#8B5CF6', '#3B82F6', '#FBBF24', '#FB923C', '#EF4444', '#EC4899', '#14B8A6'];
 
@@ -29,6 +30,17 @@ export const VistaProyectos: React.FC = () => {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [proyectoSeleccionadoId, setProyectoSeleccionadoId] = useState<string | null>(null);
   const [form, setForm] = useState<ProyectoForm>(formInicial);
+  useEffect(() => {
+  if (!localStorage.getItem('utel_auth_token')) return;
+
+  obtenerProyectos()
+    .then(({ data }) => {
+      console.log('TEMPO proyectos API:', data.length);
+    })
+    .catch((error) => {
+      console.error('Error al consultar proyectos:', error);
+    });
+}, []);
 
   if (proyectoSeleccionadoId) {
     return (

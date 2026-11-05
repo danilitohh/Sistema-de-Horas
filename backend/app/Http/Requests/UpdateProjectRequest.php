@@ -29,7 +29,7 @@ class UpdateProjectRequest extends FormRequest
                 'sometimes',
                 'nullable',
                 'integer',
-                'exists:clients,id',
+                'exists:clientes,id',
             ],
 
             'code' => [

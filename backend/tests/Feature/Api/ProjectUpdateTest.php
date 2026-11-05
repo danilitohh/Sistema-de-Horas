@@ -33,7 +33,7 @@ class ProjectUpdateTest extends TestCase
             'name' => 'Proyecto original',
         ]);
 
-        $user = new User();
+        $user = new User;
         $user->role = 'user';
 
         Sanctum::actingAs($user);
@@ -52,7 +52,7 @@ class ProjectUpdateTest extends TestCase
             'name' => 'Proyecto original',
         ]);
 
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);
@@ -74,9 +74,9 @@ class ProjectUpdateTest extends TestCase
             'Proyecto actualizado correctamente'
         );
 
-        $this->assertDatabaseHas('projects', [
+        $this->assertDatabaseHas('proyectos', [
             'id' => $project->id,
-            'name' => 'Proyecto actualizado',
+            'nombre' => 'Proyecto actualizado',
         ]);
     }
 
@@ -91,7 +91,7 @@ class ProjectUpdateTest extends TestCase
             'client_id' => $client->id,
         ]);
 
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);
@@ -113,10 +113,10 @@ class ProjectUpdateTest extends TestCase
             'Cliente de prueba'
         );
 
-        $this->assertDatabaseHas('projects', [
+        $this->assertDatabaseHas('proyectos', [
             'id' => $project->id,
-            'name' => 'Nuevo nombre',
-            'client_id' => $client->id,
+            'nombre' => 'Nuevo nombre',
+            'cliente_id' => $client->id,
         ]);
     }
 
@@ -126,7 +126,7 @@ class ProjectUpdateTest extends TestCase
             'name' => 'Proyecto original',
         ]);
 
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);
@@ -143,7 +143,7 @@ class ProjectUpdateTest extends TestCase
 
     public function test_nonexistent_project_returns_not_found(): void
     {
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);

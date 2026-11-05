@@ -27,7 +27,7 @@ class StoreProjectRequest extends FormRequest
             'client_id' => [
                 'nullable',
                 'integer',
-                'exists:clients,id',
+                'exists:clientes,id',
             ],
 
             'code' => [

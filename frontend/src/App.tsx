@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ProveedorHoras, usarHoras } from './contextos/ContextoHoras';
 import { BarraLateralClockify } from './componentes/BarraLateralClockify';
 import { VistaLogin } from './vistas/VistaLogin';
@@ -16,9 +16,84 @@ import { clienteApi } from './servicios/api';
 
 function ContenidoApp() {
   const [autenticado, setAutenticado] = useState(false);
+  const [verificandoSesion, setVerificandoSesion] = useState(true);
+
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const { usuario, cambiarRol } = usarHoras();
+  const { usuario, cambiarRol, errorPersistencia, recargarRegistros } = usarHoras();
+
+  useEffect(() => {
+  let activo = true;
+  const token = localStorage.getItem('utel_auth_token');
+
+  if (!token) {
+    setVerificandoSesion(false);
+    return;
+  }
+
+  const validarSesion = async () => {
+    try {
+      const baseUrl =
+        import.meta.env.VITE_API_URL ||
+        'http://127.0.0.1:8002/api';
+
+      const respuesta = await fetch(
+        `${baseUrl.replace(/\/$/, '')}/me`,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!respuesta.ok) {
+        if (respuesta.status === 401) {
+          localStorage.removeItem('utel_auth_token');
+        }
+
+        throw new Error('No se pudo validar la sesión');
+      }
+
+      const datos: { user: { role: string } } =
+        await respuesta.json();
+
+      if (activo) {
+        const rol = datos.user.role === 'admin'
+          ? 'administrador'
+          : 'colaborador';
+
+        cambiarRol(rol);
+
+        setVistaActual(
+          rol === 'administrador' ? 'dashboard' : 'cronometro'
+        );
+      }
+
+      await recargarRegistros();
+
+      if (activo) {
+        setAutenticado(true);
+      }
+    } catch (error) {
+      console.error('Error al validar la sesión:', error);
+
+      if (activo) {
+        setAutenticado(false);
+      }
+    } finally {
+      if (activo) {
+        setVerificandoSesion(false);
+      }
+    }
+  };
+
+  void validarSesion();
+
+  return () => {
+    activo = false;
+  };
+}, [cambiarRol, recargarRegistros]);
 
   const esAdmin = usuario.rol === 'administrador';
   const esVistaAdminExclusiva = ['dashboard', 'proyectos', 'reportes'].includes(vistaActual);
@@ -34,11 +109,13 @@ function ContenidoApp() {
     privacidad: 'Privacidad & Política de Datos (Ley 1581)',
   };
 
-  const handleLogin = (rol?: RolUsuario) => {
+  const handleLogin = async (rol?: RolUsuario) => {
     if (rol) {
       cambiarRol(rol);
       setVistaActual(rol === 'colaborador' ? 'cronometro' : 'dashboard');
     }
+
+    await recargarRegistros();
     setAutenticado(true);
   };
 
@@ -55,6 +132,10 @@ function ContenidoApp() {
     setAutenticado(false);
   }
 };
+
+if (verificandoSesion) {
+  return <div>Verificando sesión...</div>;
+}
 
   if (!autenticado) {
     return <VistaLogin onLogin={handleLogin} />;
@@ -154,6 +235,16 @@ function ContenidoApp() {
 
         {/* 3. Área de Trabajo Responsiva con Protección de Rol */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-y-auto">
+          {errorPersistencia && (
+            <div
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              role="alert"
+              aria-live="assertive"
+            >
+              {errorPersistencia}
+            </div>
+          )}
+
           {!esAdmin && esVistaAdminExclusiva ? (
             <div className="app-card p-8 sm:p-12 text-center max-w-lg mx-auto mt-10 animate-fade-in">
               <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">

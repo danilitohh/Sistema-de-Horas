@@ -4,7 +4,7 @@ import type { RolUsuario } from '../tipos';
 import { clienteApi, type AuthResponseDTO } from '../servicios/api';
 
 interface VistaLoginProps {
-  onLogin: (rol?: RolUsuario) => void;
+  onLogin: (rol?: RolUsuario) => void | Promise<void>;
 }
 
 export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
@@ -31,7 +31,7 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
       respuesta.token
     );
 
-    onLogin(respuesta.user.role === 'admin' ? 'administrador' : 'colaborador');
+    await onLogin(respuesta.user.role === 'admin' ? 'administrador' : 'colaborador');
   } catch (error) {
     const mensaje =
       error instanceof Error

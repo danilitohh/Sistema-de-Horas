@@ -24,9 +24,9 @@ class ProjectIndexTest extends TestCase
         ]);
     }
 
-    public function test_authenticated_admin_can_access_empty_projects_index(): void
+    public function test_authenticated_admin_can_access_seeded_projects_index(): void
     {
-        $admin = new User();
+        $admin = new User;
         $admin->role = 'admin';
 
         Sanctum::actingAs($admin);
@@ -34,11 +34,14 @@ class ProjectIndexTest extends TestCase
         $response = $this->getJson('/api/projects');
 
         $response->assertOk();
+        $response->assertJsonPath('message', 'Listado de proyectos');
+        $response->assertJsonCount(69, 'data');
 
-        $response->assertExactJson([
-            'data' => [],
-            'message' => 'Listado de proyectos',
-        ]);
+        $seededProject = collect($response->json('data'))
+            ->firstWhere('name', 'Acortador de enlaces');
+
+        $this->assertNotNull($seededProject);
+        $this->assertNull($seededProject['client']);
     }
 
     public function test_authenticated_user_can_view_projects_with_client(): void
@@ -56,7 +59,7 @@ class ProjectIndexTest extends TestCase
             'name' => 'Proyecto Alfa',
         ]);
 
-        $user = new User();
+        $user = new User;
         $user->role = 'user';
 
         Sanctum::actingAs($user);
@@ -64,31 +67,20 @@ class ProjectIndexTest extends TestCase
         $response = $this->getJson('/api/projects');
 
         $response->assertOk();
-        $response->assertJsonCount(2, 'data');
+        $response->assertJsonCount(71, 'data');
 
         $response->assertJsonPath(
             'message',
             'Listado de proyectos'
         );
 
-        $response->assertJsonPath(
-            'data.0.name',
-            'Proyecto Alfa'
-        );
+        $projects = collect($response->json('data'));
+        $projectWithoutClient = $projects->firstWhere('name', 'Proyecto Alfa');
+        $projectWithClient = $projects->firstWhere('name', 'Proyecto Zeta');
 
-        $response->assertJsonPath(
-            'data.0.client',
-            null
-        );
-
-        $response->assertJsonPath(
-            'data.1.name',
-            'Proyecto Zeta'
-        );
-
-        $response->assertJsonPath(
-            'data.1.client.name',
-            'Cliente de prueba'
-        );
+        $this->assertNotNull($projectWithoutClient);
+        $this->assertNull($projectWithoutClient['client']);
+        $this->assertNotNull($projectWithClient);
+        $this->assertSame('Cliente de prueba', $projectWithClient['client']['name']);
     }
 }

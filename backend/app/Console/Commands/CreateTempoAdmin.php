@@ -11,26 +11,22 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
 #[Signature('app:create-tempo-admin')]
-#[Description('Crear un administrador en SQLite local de TEMPO')]
+#[Description('Crear un administrador en MySQL local de TEMPO')]
 class CreateTempoAdmin extends Command
 {
     public function handle(): int
     {
-        $esperada = realpath(database_path('database.sqlite'));
-        $configurada = config('database.connections.sqlite.database');
-
-        $actual = is_string($configurada)
-            ? realpath($configurada)
-            : false;
+        $conexion = (string) config('database.default');
+        $base = (string) config('database.connections.tempo_mysql.database');
+        $host = strtolower((string) config('database.connections.tempo_mysql.host'));
 
         if (
-            config('database.default') !== 'sqlite' ||
-            $esperada === false ||
-            $actual === false ||
-            $actual !== $esperada
+            $conexion !== 'tempo_mysql' ||
+            $base !== 'tempo_dev' ||
+            ! in_array($host, ['127.0.0.1', 'localhost', '::1'], true)
         ) {
             $this->error(
-                'Operación bloqueada: debes utilizar SQLite local de TEMPO.'
+                'Operación bloqueada: debes utilizar el MySQL local tempo_dev.'
             );
 
             return self::FAILURE;
@@ -55,7 +51,7 @@ class CreateTempoAdmin extends Command
                 'required',
                 'email',
                 'max:255',
-                'unique:users,email',
+                'unique:usuarios,correo',
             ],
             'password' => [
                 'required',
@@ -75,11 +71,11 @@ class CreateTempoAdmin extends Command
             return self::FAILURE;
         }
 
-        $admin = new User();
-        $admin->name = $nombre;
-        $admin->email = $correo;
-        $admin->password = Hash::make($clave);
-        $admin->role = 'admin';
+        $admin = new User;
+        $admin->nombre = $nombre;
+        $admin->correo = $correo;
+        $admin->contrasena = Hash::make($clave);
+        $admin->rol = 'admin';
         $admin->save();
 
         $this->info(
