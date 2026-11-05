@@ -17,12 +17,14 @@ export interface RegisterRequestDTO {
 }
 
 export interface AuthResponseDTO {
+  message: string;
   token: string;
-  usuario: {
-    id: string;
-    nombre: string;
-    correo: string;
-    rol: 'administrador' | 'gestor' | 'colaborador';
+  token_type: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    role: 'admin' | 'user';
   };
 }
 
@@ -57,24 +59,38 @@ export interface RegistroHoraDTO {
   id: string;
   usuarioId: string;
   proyectoId: string;
-  tareaId?: string;
+  tareaId?: string | null;
   descripcion: string;
   fecha: string; // YYYY-MM-DD
-  horaInicio?: string; // HH:mm
-  horaFin?: string; // HH:mm
+  horaInicio?: string | null; // HH:mm
+  horaFin?: string | null; // HH:mm
+  duracionMinutos: number;
+  esFacturable: boolean;
+  creadoEn: string;
+}
+
+export interface CrearRegistroHoraDTO {
+  id?: string;
+  creadoEn?: string;
+  proyectoId: string;
+  tareaId?: string | null;
+  descripcion: string;
+  fecha: string;
+  horaInicio?: string | null;
+  horaFin?: string | null;
   duracionMinutos: number;
   esFacturable: boolean;
 }
 
-export interface CrearRegistroHoraDTO {
-  proyectoId: string;
-  tareaId?: string;
-  descripcion: string;
-  fecha: string;
-  horaInicio?: string;
-  horaFin?: string;
-  duracionMinutos: number;
-  esFacturable: boolean;
+interface RespuestaPaginadaDTO<T> {
+  data: T[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+  message: string;
 }
 
 // 4. Clase de Error Estructurado
@@ -91,7 +107,7 @@ export class ErrorApi extends Error {
 }
 
 // 5. Cliente HTTP Compartido (con token Bearer y cabeceras JSON)
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8002/api';
 
 async function solicitudHttp<T>(endpoint: string, opciones: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('utel_auth_token');
@@ -141,4 +157,84 @@ export const clienteApi = {
   post: <T>(endpoint: string, body: any) => solicitudHttp<T>(endpoint, { method: 'POST', body: JSON.stringify(body) }),
   put: <T>(endpoint: string, body: any) => solicitudHttp<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(endpoint: string) => solicitudHttp<T>(endpoint, { method: 'DELETE' }),
+};
+
+interface ProyectoLaravel {
+  id: number;
+  name: string;
+  code: string | null;
+  color: string | null;
+  estimated_hours: number | string | null;
+  client: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+export const obtenerProyectos = async (): Promise<{
+  data: ProyectoDTO[];
+  message: string;
+}> => {
+  const respuesta = await clienteApi.get<{
+    data: ProyectoLaravel[];
+    message: string;
+  }>('/projects');
+
+  return {
+    message: respuesta.message,
+    data: respuesta.data.map((proyecto) => ({
+      id: String(proyecto.id),
+      nombre: proyecto.name,
+      codigo: proyecto.code ?? '',
+      cliente: proyecto.client?.name ?? '',
+      color: proyecto.color ?? '#22C55E',
+      horasEstimadas: Number(proyecto.estimated_hours ?? 0),
+      horasConsumidas: 0,
+    })),
+  };
+};
+
+export const obtenerRegistrosHora = async (): Promise<RegistroHoraDTO[]> => {
+  const registros: RegistroHoraDTO[] = [];
+  let pagina = 1;
+  let ultimaPagina = 1;
+
+  do {
+    const respuesta = await clienteApi.get<RespuestaPaginadaDTO<RegistroHoraDTO>>(
+      `/time-entries?per_page=100&page=${pagina}`
+    );
+
+    registros.push(...respuesta.data);
+    ultimaPagina = respuesta.meta.last_page;
+    pagina += 1;
+  } while (pagina <= ultimaPagina);
+
+  return registros;
+};
+
+export const crearRegistroHora = async (
+  registro: CrearRegistroHoraDTO
+): Promise<RegistroHoraDTO> => {
+  const respuesta = await clienteApi.post<{ data: RegistroHoraDTO }>(
+    '/time-entries',
+    registro
+  );
+
+  return respuesta.data;
+};
+
+export const actualizarRegistroHora = async (
+  id: string,
+  registro: CrearRegistroHoraDTO
+): Promise<RegistroHoraDTO> => {
+  const respuesta = await clienteApi.put<{ data: RegistroHoraDTO }>(
+    `/time-entries/${encodeURIComponent(id)}`,
+    registro
+  );
+
+  return respuesta.data;
+};
+
+export const eliminarRegistroHora = async (id: string): Promise<void> => {
+  await clienteApi.delete<void>(`/time-entries/${encodeURIComponent(id)}`);
 };

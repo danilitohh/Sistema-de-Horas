@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, CheckCircle2, BarChart3, Users, FolderKanban, Clock, ShieldCheck, UserCheck } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, BarChart3, Users, FolderKanban, Clock } from 'lucide-react';
 import type { RolUsuario } from '../tipos';
-import { clienteApi, ErrorApi, type RegisterRequestDTO } from '../servicios/api';
+import { clienteApi, ErrorApi, type AuthResponseDTO, type RegisterRequestDTO } from '../servicios/api';
 
 interface VistaLoginProps {
-  onLogin: (rol?: RolUsuario) => void;
+  onLogin: (rol?: RolUsuario) => void | Promise<void>;
 }
 
 export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
@@ -24,38 +24,48 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!modoRegistro) {
-      onLogin();
+    if (modoRegistro) {
+      if (password !== confirmarPassword) {
+        setError('Las contraseñas no coinciden.');
+        return;
+      }
+
+      setCargando(true);
+      setError('');
+      setMensajeExito('');
+
+      try {
+        const datos: RegisterRequestDTO = {
+          name: nombre,
+          email: email.trim(),
+          password,
+          password_confirmation: confirmarPassword,
+        };
+
+        await clienteApi.post('/register', datos);
+        setMensajeExito('Registro exitoso. Ya puedes iniciar sesión.');
+        setModoRegistro(false);
+        setNombre('');
+        setPassword('');
+        setConfirmarPassword('');
+      } catch (registroError) {
+        setError(registroError instanceof ErrorApi ? registroError.message : 'No fue posible completar el registro.');
+      } finally {
+        setCargando(false);
+      }
       return;
     }
-
-    if (password !== confirmarPassword) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
-
-    setCargando(true);
-    setError('');
-    setMensajeExito('');
 
     try {
-      const datos: RegisterRequestDTO = {
-        name: nombre,
-        email,
+      const respuesta = await clienteApi.post<AuthResponseDTO>('/login', {
+        email: email.trim(),
         password,
-        password_confirmation: confirmarPassword,
-      };
+      });
 
-      await clienteApi.post('/register', datos);
-      setMensajeExito('Registro exitoso. Ya puedes iniciar sesión.');
-      setModoRegistro(false);
-      setNombre('');
-      setPassword('');
-      setConfirmarPassword('');
-    } catch (registroError) {
-      setError(registroError instanceof ErrorApi ? registroError.message : 'No fue posible completar el registro.');
-    } finally {
-      setCargando(false);
+      localStorage.setItem('utel_auth_token', respuesta.token);
+      await onLogin(respuesta.user.role === 'admin' ? 'administrador' : 'colaborador');
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'No se pudo iniciar sesión.');
     }
   };
 
@@ -206,31 +216,6 @@ export const VistaLogin: React.FC<VistaLoginProps> = ({ onLogin }) => {
               {modoRegistro ? '¿Ya tienes una cuenta? Inicia sesión' : '¿No tienes una cuenta? Regístrate'}
             </button>
           </form>
-
-          {/* Acceso Rápido por Rol para Demo */}
-          {!modoRegistro && <div className="mt-5 pt-4 border-t border-[#2D4A2D]">
-            <p className="text-[11px] font-bold text-[#86EFAC]/70 uppercase tracking-wider mb-2.5 text-center">
-              Acceso Rápido según Rol
-            </p>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => onLogin('administrador')}
-                className="py-2.5 px-3 rounded-xl bg-[#243824] hover:bg-[#2D4A2D] border border-[#22C55E]/40 text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
-                <span>Panel Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onLogin('colaborador')}
-                className="py-2.5 px-3 rounded-xl bg-[#243824] hover:bg-[#2D4A2D] border border-blue-400/40 text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <UserCheck className="w-4 h-4 text-blue-400" />
-                <span>Panel Usuario</span>
-              </button>
-            </div>
-          </div>}
 
           {/* Footer y Política de Privacidad */}
           <div className="mt-8 pt-6 border-t border-[#2D4A2D] flex items-center justify-between">

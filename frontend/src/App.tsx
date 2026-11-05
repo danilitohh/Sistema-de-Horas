@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ProveedorHoras, usarHoras } from './contextos/ContextoHoras';
 import { BarraLateralClockify } from './componentes/BarraLateralClockify';
 import { VistaLogin } from './vistas/VistaLogin';
@@ -12,12 +12,88 @@ import { VistaRegistroHoras } from './vistas/VistaRegistroHoras';
 import { VistaPoliticaDatos } from './vistas/VistaPoliticaDatos';
 import { Bell, HelpCircle, Menu, Clock, ShieldCheck, User, Lock } from 'lucide-react';
 import type { RolUsuario } from './tipos';
+import { clienteApi } from './servicios/api';
 
 function ContenidoApp() {
-  const [autenticado, setAutenticado] = useState(true);
+  const [autenticado, setAutenticado] = useState(false);
+  const [verificandoSesion, setVerificandoSesion] = useState(true);
+
   const [vistaActual, setVistaActual] = useState('dashboard');
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const { usuario, cambiarRol } = usarHoras();
+  const { usuario, cambiarRol, errorPersistencia, recargarRegistros } = usarHoras();
+
+  useEffect(() => {
+  let activo = true;
+  const token = localStorage.getItem('utel_auth_token');
+
+  if (!token) {
+    setVerificandoSesion(false);
+    return;
+  }
+
+  const validarSesion = async () => {
+    try {
+      const baseUrl =
+        import.meta.env.VITE_API_URL ||
+        'http://127.0.0.1:8002/api';
+
+      const respuesta = await fetch(
+        `${baseUrl.replace(/\/$/, '')}/me`,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!respuesta.ok) {
+        if (respuesta.status === 401) {
+          localStorage.removeItem('utel_auth_token');
+        }
+
+        throw new Error('No se pudo validar la sesión');
+      }
+
+      const datos: { user: { role: string } } =
+        await respuesta.json();
+
+      if (activo) {
+        const rol = datos.user.role === 'admin'
+          ? 'administrador'
+          : 'colaborador';
+
+        cambiarRol(rol);
+
+        setVistaActual(
+          rol === 'administrador' ? 'dashboard' : 'cronometro'
+        );
+      }
+
+      await recargarRegistros();
+
+      if (activo) {
+        setAutenticado(true);
+      }
+    } catch (error) {
+      console.error('Error al validar la sesión:', error);
+
+      if (activo) {
+        setAutenticado(false);
+      }
+    } finally {
+      if (activo) {
+        setVerificandoSesion(false);
+      }
+    }
+  };
+
+  void validarSesion();
+
+  return () => {
+    activo = false;
+  };
+}, [cambiarRol, recargarRegistros]);
 
   const esAdmin = usuario.rol === 'administrador';
   const esVistaAdminExclusiva = ['dashboard', 'proyectos', 'reportes'].includes(vistaActual);
@@ -33,21 +109,33 @@ function ContenidoApp() {
     privacidad: 'Privacidad & Política de Datos (Ley 1581)',
   };
 
-  const handleLogin = (rol?: RolUsuario) => {
+  const handleLogin = async (rol?: RolUsuario) => {
     if (rol) {
       cambiarRol(rol);
       setVistaActual(rol === 'colaborador' ? 'cronometro' : 'dashboard');
     }
+
+    await recargarRegistros();
     setAutenticado(true);
   };
 
-  const alternarRol = () => {
-    const nuevoRol: RolUsuario = esAdmin ? 'colaborador' : 'administrador';
-    cambiarRol(nuevoRol);
-    if (nuevoRol === 'colaborador' && esVistaAdminExclusiva) {
-      setVistaActual('cronometro');
-    }
-  };
+  const handleLogout = async () => {
+  try {
+    await clienteApi.post('/logout', {});
+  } catch (error) {
+    console.error(
+      'No se pudo confirmar el cierre de sesión en Laravel.',
+      error
+    );
+  } finally {
+    localStorage.removeItem('utel_auth_token');
+    setAutenticado(false);
+  }
+};
+
+if (verificandoSesion) {
+  return <div>Verificando sesión...</div>;
+}
 
   if (!autenticado) {
     return <VistaLogin onLogin={handleLogin} />;
@@ -59,7 +147,7 @@ function ContenidoApp() {
       <BarraLateralClockify
         vistaActual={vistaActual}
         cambiarVista={setVistaActual}
-        onLogout={() => setAutenticado(false)}
+        onLogout={handleLogout}
         menuAbierto={menuAbierto}
         onCerrarMenu={() => setMenuAbierto(false)}
       />
@@ -90,19 +178,22 @@ function ContenidoApp() {
           {/* Acciones Rápidas del Header & Selector de Rol */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Pill indicador y conmutador de rol interactivo */}
-            <button
-              onClick={alternarRol}
-              className={`text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition cursor-pointer ${
+            <div
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
                 esAdmin
-                  ? 'bg-[#DCFCE7] text-[#15803D] border-[#22C55E]/40 hover:bg-[#BBF7D0]'
-                  : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                  ? 'bg-[#DCFCE7] text-[#15803D] border-[#22C55E]/40'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
               }`}
-              title="Clic para cambiar entre Panel Administrador y Colaborador"
             >
-              {esAdmin ? <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" /> : <User className="w-3.5 h-3.5 text-blue-600" />}
-              <span className="hidden sm:inline">{esAdmin ? 'Panel Admin' : 'Panel Usuario'}</span>
-              <span className="text-[10px] opacity-75 hidden md:inline">(Cambiar)</span>
-            </button>
+              {esAdmin ? (
+                <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" />
+              ) : (
+                <User className="w-3.5 h-3.5 text-blue-600" />
+              )}
+              <span className="hidden sm:inline">
+                {esAdmin ? 'Panel Admin' : 'Panel Usuario'}
+              </span>
+            </div>
 
             {/* Acceso Rápido al Cronómetro en 1 Clic (RNF-16) */}
             {vistaActual !== 'cronometro' && (
@@ -117,7 +208,7 @@ function ContenidoApp() {
             )}
 
             <button
-              onClick={() => setAutenticado(false)}
+              onClick={handleLogout}
               className="text-xs font-semibold text-slate-500 hover:text-[#22C55E] px-2 py-1.5 rounded-lg hover:bg-slate-50 transition cursor-pointer hidden md:inline"
             >
               Cerrar sesión
@@ -144,6 +235,16 @@ function ContenidoApp() {
 
         {/* 3. Área de Trabajo Responsiva con Protección de Rol */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-y-auto">
+          {errorPersistencia && (
+            <div
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              role="alert"
+              aria-live="assertive"
+            >
+              {errorPersistencia}
+            </div>
+          )}
+
           {!esAdmin && esVistaAdminExclusiva ? (
             <div className="app-card p-8 sm:p-12 text-center max-w-lg mx-auto mt-10 animate-fade-in">
               <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
@@ -157,9 +258,7 @@ function ContenidoApp() {
                 <button onClick={() => setVistaActual('cronometro')} className="btn-primary">
                   Ir a mi Rastreador
                 </button>
-                <button onClick={alternarRol} className="btn-secondary">
-                  Cambiar a Modo Admin
-                </button>
+
               </div>
             </div>
           ) : (
