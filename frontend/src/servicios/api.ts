@@ -9,6 +9,13 @@ export interface LoginRequestDTO {
   password: string;
 }
 
+export interface RegisterRequestDTO {
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
 export interface AuthResponseDTO {
   token: string;
   usuario: {
