@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ChangePasswordRequest;
 use App\Http\Requests\Api\LoginRequest;
+use App\Http\Requests\Api\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,27 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        $user = User::create([
+            'nombre' => $data['name'],
+            'correo' => $data['email'],
+            'contrasena' => Hash::make($data['password']),
+            'rol' => 'user',
+        ]);
+
+        $token = $user->createToken('tempo-api')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Usuario registrado correctamente.',
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $this->userData($user),
+        ], 201);
+    }
+
     public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->validated();
@@ -30,12 +52,7 @@ class AuthController extends Controller
             'message' => 'Inicio de sesión exitoso.',
             'token' => $token,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->nombre,
-                'email' => $user->correo,
-                'role' => $user->rol,
-            ],
+            'user' => $this->userData($user),
         ], 200);
     }
 
@@ -73,5 +90,16 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Contraseña actualizada correctamente.',
         ]);
+    }
+
+    /** @return array{id: int, name: ?string, email: ?string, role: ?string} */
+    private function userData(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->nombre,
+            'email' => $user->correo,
+            'role' => $user->rol,
+        ];
     }
 }
