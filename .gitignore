@@ -1,0 +1,20 @@
+# Variables de entorno y credenciales (NUNCA subir a GitHub)
+.env
+.env.*
+.env.example
+
+# Credenciales y certificados locales
+*.pem
+*.key
+
+# Export local con cuentas y datos internos; distribuir solo por canal privado
+backend/database/sql/basededatosestasies.sql
+
+# Dependencias
+node_modules/
+
+# Logs y temporales
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
